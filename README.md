@@ -31,7 +31,7 @@ Disclaimer: I wrote this usage example _before_ I started writing out the code, 
 ```python
 >>> # get connection info
 >>> from configure import dbinfo
->>>
+>>> # dbinfo is a dictionary with 'user', 'dbname', and 'password' keys
 >>> # Make some stuff
 >>> from layers import physical, sites
 >>> layerDict = dict(physical.items() + sites.items())
