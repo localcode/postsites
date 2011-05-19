@@ -126,6 +126,9 @@ def test():
 
 if __name__=='__main__':
 
+    # get connection info
+    from configure import dbinfo
+
     # Make some stuff
     from layers import physical, sites
     layerDict = dict(physical.items() + sites.items())
@@ -136,6 +139,4 @@ if __name__=='__main__':
     config.terrainLayer = 'terrain'
 
 
-    ds = DataSource(
-
-
+    ds = DataSource(dbinfo)
