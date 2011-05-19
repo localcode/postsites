@@ -2,3 +2,4 @@
 *.swp
 configure.py
 import_data.py
+.DS_Store
