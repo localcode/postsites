@@ -47,9 +47,9 @@ PLPYTHON_ROOT  = os.path.join(os.path.abspath(__file__), 'plpython')
 def dictToLayers(layerDictionary):
     layerList = []
     for key in layerDictionary:
-        layer = Layer(key)
-        layer.name_in_db = layerDictionary[key][0]
-        layer.cols = layerDictionary[key][1:]
+        layer = Layer(layerDictionary[key]['name'])
+        layer.name_in_db = key
+        layer.cols = layerDictionary[key]['cols']
         layerList.append(layer)
     return layerList
 
@@ -217,8 +217,7 @@ class DataSource(object):
             self.close()
         if filePath != None:
             f = open(filePath, 'w')
-            for table in outList:
-                f.write(str(table))
+            f.write('\n'.join(outList))
             f.close()
             return outList
         else:
@@ -233,14 +232,16 @@ if __name__=='__main__':
     from configure import dbinfo
 
     # Make some stuff
-    from layers import physical, sites
-    layerDict = dict(physical.items() + sites.items())
+    from amigos_layers import amigos_all
+    #layerDict = dict(physical.items() + sites.items())
 
     config = ConfigurationInfo()
-    config.layers = dictToLayers(layerDict)
-
+    config.layers = dictToLayers(amigos_all)
 
     ds = DataSource(dbinfo)
+    ds.config = config
+
+
     layers = ds.viewLayers()
     print layers
     #ds.config = config
