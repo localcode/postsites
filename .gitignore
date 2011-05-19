@@ -1,3 +1,4 @@
 *.pyc
 *.swp
 configure.py
+import_data.py
