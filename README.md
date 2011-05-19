@@ -29,20 +29,39 @@ Disclaimer: I wrote this usage example _before_ I started writing out the code, 
 
 
 ```python
+>>> # get connection info
+>>> from configure import dbinfo
+>>>
+>>> # Make some stuff
+>>> from layers import physical, sites
+>>> layerDict = dict(physical.items() + sites.items())
 >>> config = ConfigurationInfo()
->>> config.layers = layer_dictionary
->>> config.siteLayer = 'parcels'
->>> config.terrainLayer = 'terrain_pts'
->>> config.sitePropertiesScript = 'myscript.py'
->>> config.distance = 100
+>>> config.layers = dictToLayers(layerDict)
+>>> config.siteLayer = 'vacantparcels'
+>>> config.terrainLayer = 'terrain'
+>>> config.buildingLayer = 'buildings'
+>>>
 >>> ds = DataSource(dbinfo)
->>> ds.configure(config)
+>>> ds.config = config
+>>> for layer in ds.config.layers:
+>>>     print layer.name, layer.name_in_db, layer.cols
+buildings doitt_building_01_28jul2009 ['ogc_fid', 'bin']
+transportation doitt_transportation_structure_01_28jul2009 ['ogc_fid']
+vacantparcels newyork_parcels ['ogc_fid', 'borough', 'block', 'lot', 'zipcode', 'address', 'landuse', 'ownername', 'lotfront', 'lotdepth', 'assessland', 'assesstot', 'exemptland', 'exempttot']
+sidewalks doitt_sidewalk_01_28jul2009 ['ogc_fid']
+medians doitt_median_01_28jul2009 ['ogc_fid', 'street_nam']
+hydrostructures doitt_hydrography_structure_01_28jul2009 ['ogc_fid']
+terrain terrain_points ['ogc_fid']
+parkinglots doitt_parking_lot_01_28jul2009 ['ogc_fid']
+hydrography doitt_hydrography_01_282009 ['ogc_fid']
+paperstreets newyork_paperstreets ['ogc_fid', 'objectid', 'street']
+>>>
 >>> ds.getSiteJSON( id=200 )
 {'Layers':[{'layer':'site', {'type':'Feature', 'geometry': {...}, 'properties':{...}}},
         {'layer':'terrain', {'type':'FeatureCollection':[ ... ]}},
         {'layer':'othersites', 'FeatureCollection':[ ... ]},
         {'layer':'buildings', 'FeatureCollection':[ ... ]}],
-        'SiteProperties: {'prop0':'value0', ... }}
+        'SiteProperties': {'prop0':'value0', ... }}
 >>> ds.getSite( id=190 )
 <Site object:'site 190'>
 >>> s = Site(ds, id=200)

@@ -17,7 +17,7 @@ Example Usage:
             {'layer':'terrain', {'type':'FeatureCollection':[ ... ]}},
             {'layer':'othersites', 'FeatureCollection':[ ... ]},
             {'layer':'buildings', 'FeatureCollection':[ ... ]}],
-            'SiteProperties: {'prop0':'value0', ... }}
+            'SiteProperties': {'prop0':'value0', ... }}
     >>> ds.getSite( id=190 )
     <Site object:'site 190'>
     >>> s = Site(ds, id=200)
@@ -63,7 +63,6 @@ class ConfigurationInfo(object):
         self.buildingLayer = None
         self.siteRadius = None
         self.sitePropertiesScript = None
-
 
 class Layer(object):
 
@@ -160,5 +159,5 @@ if __name__=='__main__':
     print 'terrain layer:', ds.config.terrainLayer
     print 'building layer:', ds.config.buildingLayer
     for layer in ds.config.layers:
-        print layer.name
+        print layer.name, layer.name_in_db, layer.cols
 
