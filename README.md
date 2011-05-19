@@ -13,7 +13,7 @@ PostSites needs [psycopg2](http://www.initd.org/psycopg/) to be installed, and a
 
 ---
 
-### Dependencies
+### Contents
 
 * `layers.py` contains an example dictionary for organizing and managing layers.
 * `connection-info.py` is an example of a small configuration dictionary used for connecting to the PostGIS database 
