@@ -25,6 +25,8 @@ PostSites needs [psycopg2](http://www.initd.org/psycopg/) to be installed, and a
 
 ### Example of Use
 
+Disclaimer: I wrote this usage example _before_ I started writing out the code, in order to help me figure out what I _want_ it to do. It will work pretty similar to this.
+
 
 ```python
 >>> config = ConfigurationInfo()
