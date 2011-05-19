@@ -8,6 +8,16 @@ import psycopg2 as pg
 sql_root = os.path.join(os.path.abspath(__file__), 'sqls')
 plpython_root  = os.path.join(os.path.abspath(__file__), 'plpython')
 
+def dictToLayers(layerDictionary):
+    layerList = []
+    for key in layerDictionary:
+        layer = Layer(key)
+        layer.name_in_db = layerDictionary[key][0]
+        layer.cols = layerDictionary[key][1:]
+        layerList.append(layer)
+    return layerList
+
+
 class ConfigurationInfo(object):
 
     def __init__(self):
@@ -23,7 +33,12 @@ class Layer(object):
 
     def __init__(self, name):
         self.name = name
+        self.name_in_db = None
+        self.cols = None
         self.features = None
+
+    def __unicode__(self):
+        return self.name
 
 
 class Site(object):
@@ -34,6 +49,9 @@ class Site(object):
         self.siteLayer = None
         self.terrainLayer = None
 
+    def __unicode__(self):
+        return 'id=%s' % self.id
+
 
 class DataSource(object):
 
@@ -43,6 +61,9 @@ class DataSource(object):
         self.dbpassword = ['password']
         self.dbinfo = dbinfo
         self.layers = None
+
+    def __unicode__(self):
+        return 'dbname=%s' % self.dbname
 
     def getSiteJSON(self, id=None):
         # For each layer
@@ -64,11 +85,6 @@ class DataSource(object):
         else:
             # return a list of the tables in the db
             pass
-
-
-
-
-
 
 
 def test():
@@ -115,10 +131,11 @@ if __name__=='__main__':
     layerDict = dict(physical.items() + sites.items())
 
     config = ConfigurationInfo()
-    config.layers = layerDict
+    config.layers = dictToLayers(layerDict)
     config.siteLayer = 'vacantparcels'
     config.terrainLayer = 'terrain'
 
 
+    ds = DataSource(
 
 
