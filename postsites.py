@@ -48,6 +48,7 @@ class Site(object):
         self.layers = []
         self.siteLayer = None
         self.terrainLayer = None
+        self.connection = None
 
     def __unicode__(self):
         return 'id=%s' % self.id
@@ -85,6 +86,12 @@ class DataSource(object):
         else:
             # return a list of the tables in the db
             pass
+
+    def connect(self):
+        connString = 'dbname=%s user=%s password=%s' % (self.dbname,
+                self.dbuser, self.dbpassword)
+        self.connection =  pg.connect(connString)
+        return self.connection
 
 
 def test():
@@ -140,3 +147,4 @@ if __name__=='__main__':
 
 
     ds = DataSource(dbinfo)
+
