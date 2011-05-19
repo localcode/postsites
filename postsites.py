@@ -39,6 +39,7 @@ Example Usage:
 
 import os
 import psycopg2 as pg
+import simplejson as json
 
 sql_root = os.path.join(os.path.abspath(__file__), 'sqls')
 plpython_root  = os.path.join(os.path.abspath(__file__), 'plpython')
@@ -73,7 +74,10 @@ class Layer(object):
         self.features = None
 
     def __unicode__(self):
-        return self.name
+        return 'Layer: %s' % self.name
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
 
 
 class Site(object):
@@ -86,7 +90,10 @@ class Site(object):
         self.connection = None
 
     def __unicode__(self):
-        return 'id=%s' % self.id
+        return 'Site: id=%s' % self.id
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
 
 
 class DataSource(object):
@@ -99,11 +106,16 @@ class DataSource(object):
         self.config = None
 
     def __unicode__(self):
-        return 'dbname=%s' % self.dbname
+        return 'DataSource: dbname=%s' % self.dbname
+
+    def __str__(self):
+        return unicode(self).encode('utf-8')
 
     def getSiteJSON(self, id=None):
         # connect to the database
         self.connect()
+
+        # open a cursor object and
 
         # For each layer
 
@@ -113,8 +125,7 @@ class DataSource(object):
             # a Layer object
             pass
 
-        # layer and use it to build up
-        # a site JSON
+        # build up a site dictionary and dump it to JSON
         siteDict = {}
 
         self.close()
@@ -159,5 +170,7 @@ if __name__=='__main__':
     print 'terrain layer:', ds.config.terrainLayer
     print 'building layer:', ds.config.buildingLayer
     for layer in ds.config.layers:
+        print layer
         print layer.name, layer.name_in_db, layer.cols
+        print
 

@@ -9,7 +9,7 @@ PostSites is being developed as part of the [Local Code](http://vimeo.com/808063
 
 ### Dependencies
 
-PostSites needs [psycopg2](http://www.initd.org/psycopg/) to be installed, and available on `sys.path`.
+PostSites needs [psycopg2](http://www.initd.org/psycopg/) and [simplejson](http://pypi.python.org/pypi/simplejson/) to be installed and available on `sys.path`.
 
 ---
 
