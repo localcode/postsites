@@ -77,7 +77,6 @@ class DataSource(object):
         # layer and use it to build up
         # a site dictionary
         siteDict = {}
-
         pass
 
     def viewLayers(self, filePath=None):
