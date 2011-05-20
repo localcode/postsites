@@ -9,7 +9,7 @@ PostSites is being developed as part of the [Local Code](http://vimeo.com/808063
 
 ### Dependencies
 
-PostSites needs [psycopg2](http://www.initd.org/psycopg/) and [simplejson](http://pypi.python.org/pypi/simplejson/) to be installed and available on `sys.path`.
+PostSites needs [`psycopg2`](http://www.initd.org/psycopg/) and [`simplejson`](http://pypi.python.org/pypi/simplejson/) to be installed and available on `sys.path`. Note that `simplejson` is included in the standard libraries for python 2.6 and later, as `json`. I'm using `simplejso`n for backwards compatibility, so if you want to use python 2.5, you can. `postsites.p`y attempts to import `simplejson` first, and if that doesn't work, attempts to import `json`.
 
 ---
 

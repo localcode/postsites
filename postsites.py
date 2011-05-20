@@ -37,14 +37,27 @@ Example Usage:
 
 """
 
+# Standard Library imports
 import os
+
+# Third party imports
 import psycopg2 as pg
-import simplejson as json
+try: #try to import simplejson
+    import simplejson as json
+except: #if simplejson doesn't work, try json
+    import json #json is in python 2.6 and later standard libraries
+
+# local package imports
+import sqls
 
 SQL_ROOT = os.path.join(os.path.abspath(__file__), 'sqls')
 PLPYTHON_ROOT  = os.path.join(os.path.abspath(__file__), 'plpython')
 
 def dictToLayers(layerDictionary):
+    """
+    translates a dictionary that contains information about
+    site layers into a list of Layer objects.
+    """
     layerList = []
     for key in layerDictionary:
         layer = Layer(layerDictionary[key]['name'])
@@ -55,7 +68,7 @@ def dictToLayers(layerDictionary):
 
 
 class ConfigurationInfo(object):
-
+    """Used to configure layers and site query parameters."""
     def __init__(self):
         self.layers = None
         self.terrainLayer = None
@@ -66,6 +79,7 @@ class ConfigurationInfo(object):
         self.sitePropertiesScript = None
 
 class Layer(object):
+    """Used to hold information about individual layers."""
 
     def __init__(self, name):
         self.name = name
@@ -81,7 +95,7 @@ class Layer(object):
 
 
 class Site(object):
-
+    """Used to hold information about individual sites."""
     def __init__(self, id):
         self.id = None
         self.layers = []
