@@ -84,12 +84,16 @@ None
 ### The `sqls.py` module
 
 This module is used to build sql statements for various tasks in postGIS.
-It tries to create a layer of abstraction around repetitive sql statements, turning them into functions, and passing variables such as the site layer name, a desired layer, a site radius, a site id into sql statements. It also formats lists of columns into strings to be placed into sql statements. Here's an example:
+It tries to create a layer of abstraction around repetitive sql statements, turning them into functions, and passing variables such as the site layer name, a desired layer, a site radius, a site id into sql statements. It also formats lists of columns into strings to be placed into sql statements.
+
+Here's an example:
+
 ```python
 >>> import sqls
 >>> m = sqls.getLayer('parcels', 'buildings', ['jello', 'mello', 'blue'], 764736, 500)
 >>> print m  #returns the sql statment below
 ```
+
 ```sql
 SELECT
         ST_AsGeoJSON(ST_Translate(buildings.wkb_geometry,
@@ -119,6 +123,7 @@ SELECT
         WHERE
             parcels.ogc_fid = 764736)
         , 500)
+
 ```
 Note in the example above that I'm using sql to move the returned geometry to the 'origin',
 where x=0 and y=0. This is necessary for importing geometry into most 3d modeling programs. The new 'origin' in this case becomes the centroid of the geometry representaing an individual site. For help understanding any of the functions above that begin with `ST_`, consult the [PostGIS documentation](http://postgis.refractions.net/docs/).
