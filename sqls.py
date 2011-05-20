@@ -1,3 +1,5 @@
+def colFormat(lay, columnList):
+    return ''.join([', ' + lay + '.' + col for col in columnList])
 
 # Creates a new layer in a PostGIS database
 # with an ogc_fid attribute
@@ -67,7 +69,7 @@ def getLayer(siteLayer, layer, cols, id, siteRadius):
         WHERE
             %(site_layer)s.ogc_fid = %(site_id)s)
         , %(site_radius)s)
-""" % {'site_layer':siteLayer, 'layer':layer, 'columns':cols, 'site_id':id, 'site_radius':siteRadius}
+""" % {'site_layer':siteLayer, 'layer':layer, 'columns':colFormat(layer, cols), 'site_id':id, 'site_radius':siteRadius}
 
 
 # Selects the site in question
@@ -98,7 +100,7 @@ FROM
     %(site_layer)s
 WHERE
     %(site_layer)s.ogc_fid = %(site_id)s
-""" % {'site_layer':siteLayer, 'columns':cols, 'site_id':id, 'site_radius':siteRadius}
+""" % {'site_layer':siteLayer, 'columns':colFormat(siteLayer, cols), 'site_id':id, 'site_radius':siteRadius}
 
 
 # Finds the closest z value in the terrain layer
@@ -158,6 +160,6 @@ def otherSites(siteLayer, cols, id, siteRadius):
         , %(site_radius)s)
     AND
         %(site_layer)s.ogc_fid != %(site_id)s
-""" % {'site_layer':siteLayer, 'columns':cols, 'site_id':id, 'site_radius':siteRadius}
+""" % {'site_layer':siteLayer, 'columns':colFormat(siteLayer, cols), 'site_id':id, 'site_radius':siteRadius}
 
 
