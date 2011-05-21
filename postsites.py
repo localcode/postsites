@@ -169,22 +169,26 @@ class DataSource(object):
 
         siteDict = {}
 
+        # get the site layer
+        site_layer = [n for n in self.config.layers if n.name == self.config.siteLayer][0]
+
         # For each layer
         for layer in self.config.layers:
-            # make a dictionary for the layer
-            renderDict = {
-                    'table':layer.name,
-                    'id':id,
-                    'cols':', '.join(layer.cols)
-                    }
-            # render the sql
-            layerSQL = self.renderSQL('getLayer.sql', renderDict)
-            # get the data
-            results = self._run(layerSQL)
-            # the data should be a set of tuples
-
-            # put the data into the site dictionary
-            siteDict[layer.name] = results
+            print 'Getting Layer %s from PostgreSQL' % layer.name
+            if layer == site_layer: # this is the site layer
+                # get the site
+                siteSQL = sqls.getSite(layer.name_in_db, layer.cols,
+                        id, self.config.siteRadius)
+                # get the other sites nearby
+                otherSitesSQL = sqls.otherSites(layer.name_in_db, layer.cols,
+                        id, self.config.siteRadius)
+                # execute SQL
+                siteDict['site'] = self._run(siteSQL)
+                siteDict['othersites'] = self._run(otherSitesSQL)
+            else: # this is some other layer
+                layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
+                        layer.cols, id, self.config.siteRadius)
+                siteDict[layer.name] = self._run(layerSQL)
 
         # close connection
         self.close()
@@ -251,20 +255,11 @@ if __name__=='__main__':
 
     config = ConfigurationInfo()
     config.layers = dictToLayers(amigos_all)
+    config.siteLayer = 'sites'
+    config.siteRadius = 5
 
     ds = DataSource(dbinfo)
     ds.config = config
+    print ds.getSiteJSON(id=20)
 
 
-    layers = ds.viewLayers()
-    print layers
-    #ds.config = config
-    #print 'site layer:', ds.config.siteLayer
-    #print 'terrain layer:', ds.config.terrainLayer
-    #print 'building layer:', ds.config.buildingLayer
-    #for layer in ds.config.layers:
-        #print layer
-        #print layer.name, layer.name_in_db, layer.cols
-        #print
-
-    #print ds.getSiteJSON(id=200)

@@ -14,7 +14,7 @@ amigos_all = {
 'geocodedbillboards':{ 'name':'geocodedbillboards', 'cols':[ 'ogc_fid', 'address', 'city', 'state',]},
 'landtypes_20110425':{ 'name':'landtypes', 'cols':[ 'ogc_fid', 'name', 'cat1', 'cat2', 'addrln1', ]},
 'metrobusstops1210':{ 'name':'busstops', 'cols':[ 'ogc_fid', 'stopnum', 'along', 'at', ]},
-'tgr06037blk00':{ 'name':'censusblocks', 'cols':[ 'ogc_fid', 'sstfid', ]},
+'tgr06037blk00':{ 'name':'censusblocks', 'cols':[ 'ogc_fid',]},
 'tgr06037lka':{ 'name':'roads', 'cols':[ 'ogc_fid',]},
 'dpw_smd_nosmd_pp':{ 'name':'noncountysewers', 'cols':[ 'ogc_fid',]},
 'dpw_smd_swr_pp':{ 'name':'countysewers', 'cols':[ 'ogc_fid', 'type', 'diameter', 'street', 'p_length', 'jur', 'matl']},

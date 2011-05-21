@@ -112,18 +112,17 @@ SELECT
         WHERE
             parcels.ogc_fid = 764736)))
     )) , buildings.jello, buildings.mello, buildings.blue
+FROM
+    buildings
+WHERE
+    ST_DWithin(buildings.wkb_geometry,
+    (SELECT
+        parcels.wkb_geometry
     FROM
-        buildings
+        parcels
     WHERE
-        ST_DWithin(buildings.wkb_geometry,
-        (SELECT
-            parcels.wkb_geometry
-        FROM
-            parcels
-        WHERE
-            parcels.ogc_fid = 764736)
-        , 500)
-
+        parcels.ogc_fid = 764736)
+    , 500)
 ```
 Note in the example above that I'm using sql to move the returned geometry to the 'origin',
 where x=0 and y=0. This is necessary for importing geometry into most 3d modeling programs. The new 'origin' in this case becomes the centroid of the geometry representaing an individual site. For help understanding any of the functions above that begin with `ST_`, consult the [PostGIS documentation](http://postgis.refractions.net/docs/).
