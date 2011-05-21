@@ -249,17 +249,20 @@ if __name__=='__main__':
     # get connection info
     from configure import dbinfo
 
-    # Make some stuff
+    # get layer configuration info
     from amigos_layers import amigos_all
-    #layerDict = dict(physical.items() + sites.items())
 
+    # Configure the data and site parameters
     config = ConfigurationInfo()
     config.layers = dictToLayers(amigos_all)
     config.siteLayer = 'sites'
     config.siteRadius = 5
 
+    # set up the DataSource
     ds = DataSource(dbinfo)
+    # give it the configuration
     ds.config = config
-    print ds.getSiteJSON(id=20)
 
+    # get one Site
+    print ds.getSiteJSON(id=20)
 
