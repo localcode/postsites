@@ -26,6 +26,7 @@ amigos_all = {
 amigos_test = {
 'proposed_sites':{ 'name':'sites', 'cols':['ogc_fid', ]},
 'laco_parks':{ 'name':'parks', 'cols':['ogc_fid', 'park', 'addr1', 'addr2',]},
-'soils_2004':{ 'name':'soils', 'cols':[ 'ogc_fid', 'class',]},
 'parcel':{ 'name':'parcels', 'cols':['ogc_fid','lot', 'block', 'parcel_typ', 'shape_area', 'usecode']},
+'tgr06037blk00':{ 'name':'censusblocks', 'cols':[ 'ogc_fid',]},
+'metrobusstops1210':{ 'name':'busstops', 'cols':[ 'ogc_fid', 'stopnum', 'along', 'at', ]},
 }

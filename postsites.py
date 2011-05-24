@@ -8,7 +8,6 @@ Example Usage:
     >>> config.layers = layer_dictionary
     >>> config.siteLayer = 'parcels'
     >>> config.terrainLayer = 'terrain_pts'
-    >>> config.sitePropertiesScript = 'myscript.py'
     >>> config.distance = 100
     >>> ds = DataSource(dbinfo)
     >>> ds.configure(config)
@@ -269,6 +268,8 @@ class DataSource(object):
 
 
 if __name__=='__main__':
+    import sys
+
 
     # get connection info
     from configure import dbinfo
@@ -281,7 +282,7 @@ if __name__=='__main__':
     config = ConfigurationInfo()
     config.layers = dictToLayers(amigos_test)
     config.siteLayer = 'sites'
-    config.siteRadius = 100
+    config.siteRadius = 600
 
     # set up the DataSource
     ds = DataSource(dbinfo)
@@ -292,6 +293,14 @@ if __name__=='__main__':
     ds.config = config
 
     # get one Site
-    result = ds.getSiteJSON(id=20)
-    print result
+    result = ds.getSiteJSON(sys.argv[1])
+    print
+    #print result
+    print
+    data = json.loads(result)
+    for key in data:
+        print 'Layer "%s":' % key
+        print len(data[key]['features'])
+        print data[key]
+        print
 
