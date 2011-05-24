@@ -46,6 +46,18 @@ try: #try to import simplejson
     import simplejson as json
 except: #if simplejson doesn't work, try json
     import json #json is in python 2.6 and later standard libraries
+    def _makeLayerJSON(self, layer, layerData):
+        geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
+        for row in layerData:
+            rawJSON, columnData = row[0], row[1:]
+            geomJSON = json.loads(rawJSON)
+            attributeDictionary = dict(zip(layer.cols, columnData))
+            featureDict = {'type':'Feature'}
+            featureDict['geometry'] = geomJSON
+            featureDict['properties'] = attributeDictionary
+            geoJSONDict['features'].append(featureDict)
+        return geoJSONDict
+
 
 # local package imports
 import sqls
@@ -65,6 +77,18 @@ def dictToLayers(layerDictionary):
         layer.cols = layerDictionary[key]['cols']
         layerList.append(layer)
     return layerList
+
+def makeLayerJSON(layer, data):
+    geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
+    for row in data:
+        rawJSON, columnData = row[0], row[1:]
+        geomJSON = json.loads(rawJSON)
+        attributeDictionary = dict(zip(layer.cols, columnData))
+        featureDict = {'type':'Feature'}
+        featureDict['geometry'] = geomJSON
+        featureDict['properties'] = attributeDictionary
+        geoJSONDict['features'].append(featureDict)
+    return geoJSONDict
 
 
 class ConfigurationInfo(object):
@@ -163,38 +187,6 @@ class DataSource(object):
             sqlString.replace(('{{%s}}' % key), variableDictionary[key])
         return sqlString
 
-    def getSiteJSON(self, id=None):
-        # connect to the database
-        self.connect()
-
-        siteDict = {}
-
-        # get the site layer
-        site_layer = [n for n in self.config.layers if n.name == self.config.siteLayer][0]
-
-        # For each layer
-        for layer in self.config.layers:
-            print 'Getting Layer %s from PostgreSQL' % layer.name
-            if layer == site_layer: # this is the site layer
-                # get the site
-                siteSQL = sqls.getSite(layer.name_in_db, layer.cols,
-                        id, self.config.siteRadius)
-                # get the other sites nearby
-                otherSitesSQL = sqls.otherSites(layer.name_in_db, layer.cols,
-                        id, self.config.siteRadius)
-                # execute SQL
-                siteDict['site'] = self._run(siteSQL)
-                siteDict['othersites'] = self._run(otherSitesSQL)
-            else: # this is some other layer
-                layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
-                        layer.cols, id, self.config.siteRadius)
-                siteDict[layer.name] = self._run(layerSQL)
-
-        # close connection
-        self.close()
-
-        return siteDict
-
     def viewLayers(self, filePath=None):
         """
         prints a list of configured layers or tables in the database
@@ -218,10 +210,9 @@ class DataSource(object):
         garbagedisposaldist
         >>> tableList
         ['tgr06037elm', 'spatial_ref_sys', 'geometry_columns', 'tgr06037lkf', 'floodmaintbdy', 'laco_parks', 'dpw_smd_nosmd_pp', 'hydro3000feetbuffer', 'garbagedisposaldist']
-
-        Or to print to a file:
+        >>> # Or to print to a file:
         >>> tableList = ds.viewLayers("layers.py")
-        Which prints each layer on a separate line
+        >>> # Which prints each layer on a separate line
         """
         outList = []
         if self.config and self.config.layers:
@@ -243,26 +234,64 @@ class DataSource(object):
                 print layer
             return outList
 
+    def getSiteJSON(self, id=None):
+        # connect to the database
+        self.connect()
+        siteDict = {}
+        # get the site layer
+        if self.config.siteLayer:
+            site_layer = [n for n in self.config.layers if n.name == self.config.siteLayer][0]
+        # For each layer
+        for layer in self.config.layers:
+            print 'Getting Layer %s from PostgreSQL' % layer.name
+            if layer == site_layer: # this is the site layer
+                # get the site
+                siteSQL = sqls.getSite(layer.name_in_db, layer.cols,
+                        id, self.config.siteRadius)
+                # get the other sites nearby
+                otherSitesSQL = sqls.otherSites(layer.name_in_db, layer.cols,
+                        id, self.config.siteRadius)
+                # execute SQL
+                siteData = self._run(siteSQL)
+                siteDict['site'] = makeLayerJSON(layer, siteData)
+                otherSiteData = self._run(otherSitesSQL)
+                if len(otherSiteData) > 0:
+                    siteDict['othersites'] = makeLayerJSON(layer, otherSiteData)
+            else: # this is some other layer
+                layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
+                        layer.cols, id, self.config.siteRadius)
+                layerData = self._run(layerSQL)
+                if len(layerData) > 0:
+                    siteDict[layer.name] = makeLayerJSON(layer, layerData)
+        # close connection
+        self.close()
+        return json.dumps(siteDict)
+
 
 if __name__=='__main__':
 
     # get connection info
     from configure import dbinfo
 
+
     # get layer configuration info
-    from amigos_layers import amigos_all
+    from amigos_layers import amigos_test
 
     # Configure the data and site parameters
     config = ConfigurationInfo()
-    config.layers = dictToLayers(amigos_all)
+    config.layers = dictToLayers(amigos_test)
     config.siteLayer = 'sites'
-    config.siteRadius = 5
+    config.siteRadius = 100
 
     # set up the DataSource
     ds = DataSource(dbinfo)
+    # print the layers
+    #tableList = ds.viewLayers()
+
     # give it the configuration
     ds.config = config
 
     # get one Site
-    print ds.getSiteJSON(id=20)
+    result = ds.getSiteJSON(id=20)
+    print result
 

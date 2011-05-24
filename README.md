@@ -126,3 +126,8 @@ WHERE
 ```
 Note in the example above that I'm using sql to move the returned geometry to the 'origin',
 where x=0 and y=0. This is necessary for importing geometry into most 3d modeling programs. The new 'origin' in this case becomes the centroid of the geometry representaing an individual site. For help understanding any of the functions above that begin with `ST_`, consult the [PostGIS documentation](http://postgis.refractions.net/docs/).
+
+## Some Common Spatial Reference Codes:
+
+* *EPSG 4327*: WGS 1984, a lat/long geographic coordinate system that extremely common, and the default for all TIGER data.
+* *EPSG 3857*: A Spherical Mercator Projection used in Google Maps and Open Street Maps. Units in lat/long.

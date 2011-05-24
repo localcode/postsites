@@ -1,3 +1,4 @@
+
 def colFormat(lay, columnList):
     return ''.join([', ' + lay + '.' + col for col in columnList])
 

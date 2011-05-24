@@ -22,3 +22,10 @@ amigos_all = {
 'tgr06037lkh':{ 'name':'hydrography', 'cols':[ 'ogc_fid', ]},
 'waterpurveyors':{ 'name':'waterpurveyors', 'cols':[ 'ogc_fid','name1', 'addr1', 'addr2', 'phone', ]},
 }
+
+amigos_test = {
+'proposed_sites':{ 'name':'sites', 'cols':['ogc_fid', ]},
+'laco_parks':{ 'name':'parks', 'cols':['ogc_fid', 'park', 'addr1', 'addr2',]},
+'soils_2004':{ 'name':'soils', 'cols':[ 'ogc_fid', 'class',]},
+'parcel':{ 'name':'parcels', 'cols':['ogc_fid','lot', 'block', 'parcel_typ', 'shape_area', 'usecode']},
+}
