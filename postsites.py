@@ -45,18 +45,6 @@ try: #try to import simplejson
     import simplejson as json
 except: #if simplejson doesn't work, try json
     import json #json is in python 2.6 and later standard libraries
-    def _makeLayerJSON(self, layer, layerData):
-        geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
-        for row in layerData:
-            rawJSON, columnData = row[0], row[1:]
-            geomJSON = json.loads(rawJSON)
-            attributeDictionary = dict(zip(layer.cols, columnData))
-            featureDict = {'type':'Feature'}
-            featureDict['geometry'] = geomJSON
-            featureDict['properties'] = attributeDictionary
-            geoJSONDict['features'].append(featureDict)
-        return geoJSONDict
-
 
 # local package imports
 import sqls
@@ -78,6 +66,7 @@ def dictToLayers(layerDictionary):
     return layerList
 
 def makeLayerJSON(layer, data):
+    layerDict = {'type': 'Layer', 'name':layer.name}
     geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
     for row in data:
         rawJSON, columnData = row[0], row[1:]
@@ -87,7 +76,10 @@ def makeLayerJSON(layer, data):
         featureDict['geometry'] = geomJSON
         featureDict['properties'] = attributeDictionary
         geoJSONDict['features'].append(featureDict)
-    return geoJSONDict
+    layerDict['contents'] = geoJSONDict
+    if layer.color:
+        layerDict['color'] = layer.color
+    return layerDict
 
 
 class ConfigurationInfo(object):
@@ -109,6 +101,7 @@ class Layer(object):
         self.name_in_db = None
         self.cols = None
         self.features = None
+        self.color = None
 
     def __unicode__(self):
         return 'Layer: %s' % self.name
@@ -229,20 +222,21 @@ class DataSource(object):
             f.close()
             return outList
         else:
-            for layer in outList:
-                print layer
+            print '\n'.join([("'%s':{ 'name': '', 'cols':[ , ]}" % layer) for layer in outList])
             return outList
 
     def getSiteJSON(self, id=None):
         # connect to the database
         self.connect()
         siteDict = {}
+        siteDict["type"] = "LayerCollection"
+        siteDict["layers"] = []
         # get the site layer
         if self.config.siteLayer:
             site_layer = [n for n in self.config.layers if n.name == self.config.siteLayer][0]
         # For each layer
         for layer in self.config.layers:
-            print 'Getting Layer %s from PostgreSQL' % layer.name
+            #print 'Getting Layer %s from PostgreSQL' % layer.name
             if layer == site_layer: # this is the site layer
                 # get the site
                 siteSQL = sqls.getSite(layer.name_in_db, layer.cols,
@@ -261,7 +255,7 @@ class DataSource(object):
                         layer.cols, id, self.config.siteRadius)
                 layerData = self._run(layerSQL)
                 if len(layerData) > 0:
-                    siteDict[layer.name] = makeLayerJSON(layer, layerData)
+                    siteDict["layers"].append(makeLayerJSON(layer, layerData))
         # close connection
         self.close()
         return json.dumps(siteDict)
@@ -273,7 +267,6 @@ if __name__=='__main__':
 
     # get connection info
     from configure import dbinfo
-
 
     # get layer configuration info
     from amigos_layers import amigos_test
@@ -287,20 +280,17 @@ if __name__=='__main__':
     # set up the DataSource
     ds = DataSource(dbinfo)
     # print the layers
-    #tableList = ds.viewLayers()
+    #tableList = ds.viewLayers() # this should print some things
 
     # give it the configuration
     ds.config = config
 
     # get one Site
-    result = ds.getSiteJSON(sys.argv[1])
-    print
-    #print result
-    print
-    data = json.loads(result)
-    for key in data:
-        print 'Layer "%s":' % key
-        print len(data[key]['features'])
-        print data[key]
-        print
+    print ds.getSiteJSON(sys.argv[1])[:4100] # 3897 is the exact limit
+    #data = json.loads(result)
+    #for key in data:
+        #print 'Layer "%s":' % key
+        #print len(data[key]['features'])
+        #print data[key]
+        #print
 
