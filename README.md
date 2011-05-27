@@ -127,7 +127,36 @@ WHERE
 Note in the example above that I'm using sql to move the returned geometry to the 'origin',
 where x=0 and y=0. This is necessary for importing geometry into most 3d modeling programs. The new 'origin' in this case becomes the centroid of the geometry representaing an individual site. For help understanding any of the functions above that begin with `ST_`, consult the [PostGIS documentation](http://postgis.refractions.net/docs/).
 
+### The `loader.py` Module
+
+A module for loading data into a PostGIS database for PostSites
+Example of Planned Use:
+
+```python
+>>> # select a folder to load data from
+>>> folder = '/Users/benjamin/projects/localcode/gis_data/'
+>>> # use that folder to create a DataDirectory object
+>>> dd = DataDirectory(folder)
+>>> # see all the unique projections in the directory
+>>> dd.uniqueProjections
+>>> # See and edit a dictionary of WKT projections and EPSG codes
+>>> dd.projectionDictionary
+>>> # output a file for adjusting the settings
+>>> dd.configureAll()
+>>> # load the edited file in order to set up the database correctly
+>>> dd.loadConfiguration(config_edited.py)
+>>> from postsites import DataSource
+>>> ds = DataSource({'user':'postgis','dbname':'mydb','password':'postgres'})
+>>> # load all designated files in the directory
+>>> dd.loadAll( ds )
+>>> # load a particular file, and give it a layer name
+>>> dd.loadOne( ds, 'outlines.shp', 'state_outlines')
+```
+
 ## Some Common Spatial Reference Codes:
 
 * *EPSG 4327*: WGS 1984, a lat/long geographic coordinate system that extremely common, and the default for all TIGER data.
 * *EPSG 3857*: A Spherical Mercator Projection used in Google Maps and Open Street Maps. Units in lat/long.
+
+
+
