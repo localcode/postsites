@@ -25,6 +25,17 @@ amigos_all = {
 
 amigos_test = {
 'proposed_sites':{ 'name':'sites', 'cols':['ogc_fid', ]},
+'geocodedbillboards':{ 'name':'geocodedbillboards', 'cols':[ 'ogc_fid', 'address', 'city', 'state',]},
+'foundbillboards':{ 'name':'foundbillboards', 'cols':[ 'ogc_fid',]},
 'laco_parks':{ 'name':'parks', 'cols':['ogc_fid', 'park', 'addr1', 'addr2',]},
-'parcel':{ 'name':'parcels', 'cols':['ogc_fid','lot', 'block', 'parcel_typ', 'shape_area', 'usecode']},
+'metrobusstops1210':{ 'name':'busstops', 'cols':[ 'ogc_fid', 'stopnum', 'along', 'at', ]},
+'raillines1109':{ 'name':'raillines', 'cols':[ 'ogc_fid', 'line', 'name']},
+'dpw_smd_nosmd_pp':{ 'name':'noncountysewers', 'cols':[ 'ogc_fid',]},
+'dpw_smd_swr_pp':{ 'name':'countysewers', 'cols':[ 'ogc_fid', 'type', 'diameter', 'street', 'p_length', 'jur', 'matl']},
+#'drp_freeways_simple':{ 'name':'freeways', 'cols':[ 'ogc_fid', 'rte1_alf', 'type_name', ]},
+'laparcelsunder3000':{ 'name':'smallparcels', 'cols':[ 'ogc_fid',]},
+'drp_bikeway_plan':{ 'name':'bikeways', 'cols':[ 'ogc_fid', 'namea_alf',]},
+'tinnode199':{ 'name': 'terrain', 'cols':[ 'elevation', ]},
+'tinnode406':{ 'name': 'terrain', 'cols':[ 'elevation', ]},
+'tinnode661':{ 'name': 'terrain', 'cols':[ 'elevation', ]},
 }

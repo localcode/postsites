@@ -33,7 +33,6 @@ Example Usage:
     >>> layer = s.layers[2]
     >>> layer.features
     {'FeatureCollection':[ ... ]}
-
 """
 
 # Standard Library imports
@@ -41,10 +40,10 @@ import os
 
 # Third party imports
 import psycopg2 as pg
-try: #try to import simplejson
-    import simplejson as json
-except: #if simplejson doesn't work, try json
+try: #try to import json
     import json #json is in python 2.6 and later standard libraries
+except: #if json doesn't work, try simplejson
+    import simplejson as json
 
 # local package imports
 import sqls
@@ -52,16 +51,18 @@ import sqls
 SQL_ROOT = os.path.join(os.path.abspath(__file__), 'sqls')
 PLPYTHON_ROOT  = os.path.join(os.path.abspath(__file__), 'plpython')
 
-def dictToLayers(layerDictionary):
+def dictToLayers(layersDictionary):
     """
     translates a dictionary that contains information about
     site layers into a list of Layer objects.
     """
     layerList = []
-    for key in layerDictionary:
-        layer = Layer(layerDictionary[key]['name'])
+    for key in layersDictionary:
+        layer = Layer(layersDictionary[key]['name'])
         layer.name_in_db = key
-        layer.cols = layerDictionary[key]['cols']
+        layer.cols = layersDictionary[key]['cols']
+        if 'color' in layersDictionary[key]:
+            layer.color = layersDictionary[key]['color']
         layerList.append(layer)
     return layerList
 
@@ -92,6 +93,8 @@ class ConfigurationInfo(object):
         self.buildingLayer = None
         self.siteRadius = None
         self.sitePropertiesScript = None
+        self.force2d = False
+        self.getNearbySites = True
 
 class Layer(object):
     """Used to hold information about individual layers."""
@@ -102,6 +105,7 @@ class Layer(object):
         self.cols = None
         self.features = None
         self.color = None
+        self.zColumn = None
 
     def __unicode__(self):
         return 'Layer: %s' % self.name
@@ -162,13 +166,19 @@ class DataSource(object):
         cur.close()
         return records
 
-    def connect(self):
+    def _connectAndRun(self, sql):
+        self._connect()
+        records = self._run(sql)
+        self._close()
+        return records
+
+    def _connect(self):
         connString = 'dbname=%s user=%s password=%s' % (self.dbname,
                 self.dbuser, self.dbpassword)
         self.connection =  pg.connect(connString)
         return self.connection
 
-    def close(self):
+    def _close(self):
         self.connection.close()
 
     def renderSQL(self, sqlTemplateName, variableDictionary,
@@ -189,7 +199,7 @@ class DataSource(object):
         them. A file path can be passed to viewLayers to write the
         list to a file.
         Example:
-        >>> ds = DataSource(dbinfo) # see Datasource doc about this line
+        >>> ds = DataSource(dbinfo) # see DataSource.__doc__ about this line
         >>> tableList = ds.viewLayers()
         tgr06037elm
         spatial_ref_sys
@@ -210,24 +220,29 @@ class DataSource(object):
         if self.config and self.config.layers:
             outList = self.config.layers
         else:
-            self.connect()
-            s = "SELECT tablename FROM pg_tables WHERE tablename !~'^pg_|^sql_';"
+            self._connect()
+            regexMask = '^pg_|^sql_|spatial_ref_sys|geometry_columns'
+            s = "SELECT tablename FROM pg_tables WHERE tablename !~'%s';" % regexMask
             data = self._run(s)# return a list of the tables in the db
             for row in data: # data is a list of tuples
                 outList.append(row[0]) #only one item in each tuple
-            self.close()
+            self._close()
         if filePath != None:
             f = open(filePath, 'w')
             f.write('\n'.join(outList))
             f.close()
             return outList
         else:
-            print '\n'.join([("'%s':{ 'name': '', 'cols':[ , ]}" % layer) for layer in outList])
+            # this could be edited to actually get the column names from the db as well
+            formattedLayerDicts = [("'%s':{ 'name': '', 'cols':[ , ]}" % layer) for layer in outList]
+            prefix = 'all_database_layers = {\n'
+            suffix = '\n}'
+            print prefix + ',\n'.join(formattedLayerDicts) + suffix
             return outList
 
     def getSiteJSON(self, id=None):
         # connect to the database
-        self.connect()
+        self._connect()
         siteDict = {}
         siteDict["type"] = "LayerCollection"
         siteDict["layers"] = []
@@ -241,15 +256,20 @@ class DataSource(object):
                 # get the site
                 siteSQL = sqls.getSite(layer.name_in_db, layer.cols,
                         id, self.config.siteRadius)
-                # get the other sites nearby
-                otherSitesSQL = sqls.otherSites(layer.name_in_db, layer.cols,
-                        id, self.config.siteRadius)
                 # execute SQL
-                siteData = self._run(siteSQL)
-                siteDict['site'] = makeLayerJSON(layer, siteData)
-                otherSiteData = self._run(otherSitesSQL)
-                if len(otherSiteData) > 0:
-                    siteDict['othersites'] = makeLayerJSON(layer, otherSiteData)
+                siteData = self._run(siteSQL) # get the site
+                siteJson = makeLayerJSON(layer, siteData)
+                siteJson["name"] = "site"
+                siteDict["layers"].append( siteJson )
+                if self.config.getNearbySites:
+                    # get the other sites nearby
+                    otherSitesSQL = sqls.otherSites(layer.name_in_db, layer.cols,
+                            id, self.config.siteRadius)
+                    otherSitesData = self._run(otherSitesSQL) # get the other sites
+                    if len(otherSitesData) > 0: # if there are other sites
+                        otherSitesJson = makeLayerJSON(layer, otherSitesData)
+                        otherSitesJson["name"] = "othersites"
+                        siteDict["layers"].append( otherSitesJson )
             else: # this is some other layer
                 layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
                         layer.cols, id, self.config.siteRadius)
@@ -257,13 +277,12 @@ class DataSource(object):
                 if len(layerData) > 0:
                     siteDict["layers"].append(makeLayerJSON(layer, layerData))
         # close connection
-        self.close()
+        self._close()
         return json.dumps(siteDict)
 
 
 if __name__=='__main__':
     import sys
-
 
     # get connection info
     from configure import dbinfo
@@ -284,13 +303,11 @@ if __name__=='__main__':
 
     # give it the configuration
     ds.config = config
+    #print '\n'.join([layer.name for layer in ds.config.layers])
 
     # get one Site
-    print ds.getSiteJSON(sys.argv[1])[:4100] # 3897 is the exact limit
-    #data = json.loads(result)
-    #for key in data:
-        #print 'Layer "%s":' % key
-        #print len(data[key]['features'])
-        #print data[key]
-        #print
+    #print ds.getSiteJSON(sys.argv[1])
 
+    s = sqls.getLayer('proposed_sites', 'tinnode406', ['elevation',], 20, 100000)
+    print s
+    print ds._connectAndRun(s)
