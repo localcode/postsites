@@ -90,6 +90,14 @@ class Projection(object):
     def setEPSG(self, epsgCode):
         self.epsg = epsgCode
 
+    def _inputFormat(self, index=None):
+        return '''
+        {
+        "index": %s,
+        "epsg": %s,
+        "wkt": "%s",
+        }''' % (str(index), str(self.epsg), self.wkt )
+
     #def fetchRepresentations(self, epsgCode=None):
         #'''connects to the internet and downloads multiple
         #representations of this projection from spatialreference.org.'''
@@ -181,9 +189,9 @@ class DataDirectory(object):
         self.folder = folderPath
         self.directory = self.folder # a shortcut!
         self.dir = self.folder # a shortcut!
+        self.uniqueProjections = []
         self._browseFiles()
         #self.unprojectedFiles = None
-        #self.uniqueProjections = self._getUniqueProjs
 
         # these shouild be configured
         self.targetDataSource = None
@@ -194,38 +202,46 @@ class DataDirectory(object):
         their EPSG codes.'''
         pass
 
+    def _wkts(self):
+        if self.uniqueProjections:
+            return [proj.wkt for proj in self.uniqueProjections]
+        else:
+            return []
+
     def _browseFiles(self):
         # depends on having the PATH set up correctly
         import pprint
         self.files = []
-        wkts = []
         self.unprojectedFiles = []
         # set fileList
         for fp in getShpFiles(self.folder):
-            df = DataFile(self, fp)
-            self.files.append( df )
+            df = DataFile(self, fp) # This line needs ogrinfo to be in the PATH
+            self.files.append( df ) # add the datafile object
             if df.hasProj: # this file has a proj file
-                if df.baseWkt not in wkts:
-                    wkts.append(df.baseWkt)
-                    projIndex = len(wkts) - 1
-                else: #existing proj
-                    projIndex = wkts.index(df.baseWkt)
-                    # find the proj
-
+                if df.baseWkt not in self._wkts(): # new proj
+                    p = Projection(df.baseWkt) # create Projection object
+                    self.uniqueProjections.append(p) # add it to list
+                    df.proj = p # tell the file which projection it has
+                else: # existing proj
+                    p = self.uniqueProjections[self._wkts().index(df.baseWkt)] # lookup wkt
+                    df.proj = p # tell the file which projection it has
             else: # has no proj file
                 self.unprojectedFiles.append(df)
 
+    def printProjections(self):
+        projs = self.uniqueProjections
+        ps=',\n'.join([projs[i]._inputFormat(i) for i in range(len(projs))])
+        s = 'unique_projections = [\n'+ps+'\n]'
+        m = '''
+"""
+Unique Projection output for Data Directory at:
+    '%s'
 
+EPSG codes for input can be found using these websites:
+    http://www.spatialreference.org
+    http://prj2epsg.org/search
 
-        pprint.pprint( self.files )
-
-        # right now I read teh shapefile info in an inefficient way:
-            #1. get basic info using ogrinfo
-            #2. use the basic info to get more info
-
-        # get the unique projections and unprojected files
-        # use ogr or something to get data on each file
-        # determine the projection of each file.
-
-
+"""
+''' % self.folder
+        print m + s
 
