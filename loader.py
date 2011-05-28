@@ -26,7 +26,7 @@ Planned Use:
 # Standard Library Imports
 import os
 import sys
-import subprocess
+from subprocess import Popen, PIPE
 
 # This module should check for and find the
 # necessary GIS libraries for loading data.
@@ -43,6 +43,11 @@ shpTypeDict = {
         "3D Polygon":'MULTIPOLYGON25D',
         "3D Line String":'MULTILINESTRING25D'
         }
+
+def runArgs(args):
+    '''run cmd, return (stdout, stderr).'''
+    p = Popen(args, stdout=PIPE, stderr=PIPE)
+    return p.communicate() # returns (stdout, stderr)
 
 def generateLoadArgs(dbInfo, path, shpType, srs_in, srs_out):
     '''generates command line arguments based on configurations
@@ -108,35 +113,48 @@ class DataFile(object):
         self.fp = os.path.abspath(filePath) # make sure the path is a good one
         self.filePath = self.fp # shortcut !
         self.dd = dataDirectory
-        self.getInfo()
+        # ._readInfo fails silently, needs error raising.
+        self._readInfo() # this sets many attributes
 
-        ## these attributes should be set when first initiated:
-        #self.hasProj = False
-        #self.proj = None
-        #self.shpType = None
-        ##self.getProjection()
         ## these attributes depend on a user's configuration and preferences
-        #self.destLayer = None
-        #self.isTerrainLayer = False
-        #self.isBuildingLayer = False
-        #self.isSiteLayer = False
-        #self.zField = None
-
-    # this methd should be read upon initialization
-    def getProjection(self):
-        self.hasProj = None
-        self.proj = Projection(wkt)
+        self.destLayer = None
+        self.isTerrainLayer = False
+        self.isBuildingLayer = False
+        self.isSiteLayer = False
+        self.zField = None
 
     # this method should be read upon initialization
-    def getInfo(self):
-        args = ['ogrinfo', '-ro', '-geom=NO', self.filePath]
-        result = subprocess.check_output(args)
-        return result
+    def _readProj(self):
+        '''called by _getInfo, tries to read proj file if it exists.'''
+        projFilePath = os.path.splitext(self.filePath)[0] + '.prj'
+        # if proj file exists:
+        if os.path.exists(projFilePath):
+            wkt = open(projFilePath, 'r').read()
+            self.baseWkt = wkt
+            self.hasProj = True
+        else:
+            self.proj = None
+            self.hasProj = False
+
+    # this method should be read upon initialization
+    def _readInfo(self):
+        '''called by __init__, reads info from file to populate attribute values.
+        sets defaultName, shpType, and calls _getProj to try to get projection.
+        this method depnds on having ogrinfo available on the system PATH.'''
+        args = ['ogrinfo', '-ro', self.filePath]
+        out, err = runArgs(args)
+        if len(err) > 0: # if there's an error
+            return err # return the error
+        else:
+            rlayName, rshpType = out.split('\n')[2].split(' (')
+            self.defaultName = rlayName.split()[1]
+            self.shpType = rshpType.split(')')[0]
+            self._readProj()
 
     # this method should be called to load the file
     # and only after the loading has been configured
-    def _getLoadCMD(self, dataSource):
-        cmd = generateLoadCmd(dataSource.dbinfo, # connectioninfo
+    def _getLoadArgs(self, dataSource):
+        return generateLoadArgs(dataSource.dbinfo, # connectioninfo
                               self.filePath, # file path
                               self.shpType, # shape Type
                               'EPSG:%s' % self.proj.epsg, #srs_in
@@ -145,11 +163,13 @@ class DataFile(object):
 
     def _load(self, dataSource):
         # depends on subprocess module
-        cmd = self._getloadCMD( dataSource ) # this needs to be a list, not a string
+        args = self._getloadArgs( dataSource ) # this needs to be a list, not a string
         # use subprocess to run cmd
-        result = subprocess.check_output(cmd)
-
-
+        out, err = runArgs(args)
+        if len(err) > 0: # if there's an error
+            return False, err # return the error
+        else:
+            return True, out
 
 
 class DataDirectory(object):
@@ -161,8 +181,8 @@ class DataDirectory(object):
         self.folder = folderPath
         self.directory = self.folder # a shortcut!
         self.dir = self.folder # a shortcut!
-        #self._readFilesForInfo()
-        self.unprojectedFiles = None
+        self._browseFiles()
+        #self.unprojectedFiles = None
         #self.uniqueProjections = self._getUniqueProjs
 
         # these shouild be configured
@@ -174,11 +194,30 @@ class DataDirectory(object):
         their EPSG codes.'''
         pass
 
-    def _readFilesForInfo(self):
+    def _browseFiles(self):
         # depends on having the PATH set up correctly
-
+        import pprint
+        self.files = []
+        wkts = []
+        self.unprojectedFiles = []
         # set fileList
-        shpFileList = getShpFiles(self.folder)
+        for fp in getShpFiles(self.folder):
+            df = DataFile(self, fp)
+            self.files.append( df )
+            if df.hasProj: # this file has a proj file
+                if df.baseWkt not in wkts:
+                    wkts.append(df.baseWkt)
+                    projIndex = len(wkts) - 1
+                else: #existing proj
+                    projIndex = wkts.index(df.baseWkt)
+                    # find the proj
+
+            else: # has no proj file
+                self.unprojectedFiles.append(df)
+
+
+
+        pprint.pprint( self.files )
 
         # right now I read teh shapefile info in an inefficient way:
             #1. get basic info using ogrinfo
