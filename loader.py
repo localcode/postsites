@@ -189,7 +189,6 @@ class DataDirectory(object):
         self.folder = folderPath
         self.directory = self.folder # a shortcut!
         self.dir = self.folder # a shortcut!
-        self.uniqueProjections = []
         self._browseFiles()
         #self.unprojectedFiles = None
 
@@ -210,7 +209,7 @@ class DataDirectory(object):
 
     def _browseFiles(self):
         # depends on having the PATH set up correctly
-        import pprint
+        self.uniqueProjections = []
         self.files = []
         self.unprojectedFiles = []
         # set fileList
@@ -244,4 +243,50 @@ EPSG codes for input can be found using these websites:
 """
 ''' % self.folder
         print m + s
+
+    def loadProjections(self, proj_list=None, file_path=None):
+        if not (file_path or proj_list):
+            print 'please enter an input!'
+            return
+        if file_path: # try to use the file path
+            fp = os.path.abspath(file_path)
+            if os.path.exists(fp):
+                try:
+                    # this should get 'unique_projections'
+                    eval(open(fp, 'r').read()) # this is probably sketchy to do
+                    # but I don't know how to import from a file in the right way
+                    # doesn't import actually evaluate the file though?
+                    try:
+                        proj_list = unique_projections
+                    except:
+                        print 'a python list called "unique_projections" does not exist in the file %s' % file_path
+                        print 'Please rename the list, or edit the file and try again.'
+                        return
+                except:
+                    print 'File at %s\ncould not be read correctly.' % file_path
+                    print 'please edit the file path or ensure that the file does not contain errors.'
+                    return
+            else:
+                print 'no file exists at %s' % fp
+                return
+        # next, look at proj_list
+        if proj_list and type(proj_list) == list: # try to use the projection list
+            try:
+                for i in range(len(proj_list)):
+                    proj = proj_list[i]
+                    p = self.uniqueProjections[proj['index']]
+                    p.epsg = proj['epsg']
+                    p.wkt = proj['wkt']
+            except:
+                print 'Projections could not be loaded from projection list.'
+                print 'Ensure that they are the correct dictionary format,'
+                print 'and contain "wkt", "epsg", and "index" codes.'
+                return
+        else:
+            print "Something's wrong with the input"
+            print "It might not be a valid python list object"
+            print "It appears to be a %s" % type(proj_list)
+            return
+
+
 
