@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset='utf-8'>
+
+  <title>bengolder/postsites @ GitHub</title>
+
+  <style type="text/css">
+    body {
+      margin-top: 1.0em;
+      background-color: #ffffff;
+      font-family: Helvetica, Arial, FreeSans, san-serif;
+      color: #000000;
+    }
+    #container {
+      margin: 0 auto;
+      width: 700px;
+    }
+    h1 { font-size: 3.8em; color: #000000; margin-bottom: 3px; }
+    h1 .small { font-size: 0.4em; }
+    h1 a { text-decoration: none }
+    h2 { font-size: 1.5em; color: #000000; }
+    h3 { text-align: center; color: #000000; }
+    a { color: #000000; }
+    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
+    .download { float: right; }
+    pre { background: #000; color: #fff; padding: 15px;}
+    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
+    .footer { text-align:center; padding-top:30px; font-style: italic; }
+  </style>
+</head>
+
+<body>
+  <a href="http://github.com/bengolder/postsites"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+
+  <div id="container">
+
+    <div class="download">
+      <a href="http://github.com/bengolder/postsites/zipball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
+      <a href="http://github.com/bengolder/postsites/tarball/master">
+        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
+    </div>
+
+    <h1><a href="http://github.com/bengolder/postsites">postsites</a>
+      <span class="small">by <a href="http://github.com/bengolder">bengolder</a></span></h1>
+
+    <div class="description">
+      PostSites is a set of python modules for managing PostGIS data sets, and retrieving information based on a 'per-site' basis.
+    </div>
+
+    <p>Example of Use
+
+Disclaimer: I wrote this usage example before I started writing out the code, in order to help me figure out what I want it to do. It will work pretty similar to this.
+
+>>> # get connection info
+>>> from configure import dbinfo
+>>> # dbinfo is a dictionary with 'user', 'dbname', and 'password' keys
+>>> # Make some stuff
+>>> from layers import physical, sites
+>>> layerDict = dict(physical.items() + sites.items())
+>>> config = ConfigurationInfo()
+>>> config.layers = dictToLayers(layerDict)
+>>> config.siteLayer = 'vacantparcels'
+>>> config.terrainLayer = 'terrain'
+>>> config.buildingLayer = 'buildings'
+>>>
+>>> ds = DataSource(dbinfo)
+>>> ds.config = config
+>>> for layer in ds.config.layers:
+>>>     print layer.name, layer.name_in_db, layer.cols
+buildings doitt_building_01_28jul2009 ['ogc_fid', 'bin']
+transportation doitt_transportation_structure_01_28jul2009 ['ogc_fid']
+vacantparcels newyork_parcels ['ogc_fid', 'borough', 'block', 'lot', 'zipcode', 'address', 'landuse', 'ownername', 'lotfront', 'lotdepth', 'assessland', 'assesstot', 'exemptland', 'exempttot']
+sidewalks doitt_sidewalk_01_28jul2009 ['ogc_fid']
+medians doitt_median_01_28jul2009 ['ogc_fid', 'street_nam']
+hydrostructures doitt_hydrography_structure_01_28jul2009 ['ogc_fid']
+terrain terrain_points ['ogc_fid']
+parkinglots doitt_parking_lot_01_28jul2009 ['ogc_fid']
+hydrography doitt_hydrography_01_282009 ['ogc_fid']
+paperstreets newyork_paperstreets ['ogc_fid', 'objectid', 'street']
+>>>
+>>> ds.getSiteJSON( id=200 )
+{'Layers':[{'layer':'site', {'type':'Feature', 'geometry': {...}, 'properties':{...}}},
+        {'layer':'terrain', {'type':'FeatureCollection':[ ... ]}},
+        {'layer':'othersites', 'FeatureCollection':[ ... ]},
+        {'layer':'buildings', 'FeatureCollection':[ ... ]}],
+        'SiteProperties': {'prop0':'value0', ... }}
+>>> ds.getSite( id=190 )
+<Site object:'site 190'>
+>>> s = Site(ds, id=200)
+>>> s2 = Site(ds, query='assess_val = 3000')
+>>> s.properties
+None
+>>> s.build() # retrieves the site data and builds
+>>> s.properties
+{'prop0':'value0', ... }
+>>> s.layers
+[<Layer object:'terrain'>, <Layer object:'buildings'>, ... ]
+>>> s.prop0
+'value0'
+>>> layer = s.layers[2]
+>>> layer.features
+{'FeatureCollection':[ ... ]}</p><h2>Authors</h2>
+<p>Nicholas de Monchaux (demonchau@berkeley.edu)<br/>Benjamin Golder (benjamin.j.golder@gmail.com)<br/><br/>      </p>
+<h2>Contact</h2>
+<p>Nicholas de Monchaux (demonchau@berkeley.edu)<br/>Benjamin Golder (benjamin.j.golder@gmail.com)</p>
+
+
+    <h2>Download</h2>
+    <p>
+      You can download this project in either
+      <a href="http://github.com/bengolder/postsites/zipball/master">zip</a> or
+      <a href="http://github.com/bengolder/postsites/tarball/master">tar</a> formats.
+    </p>
+    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
+      by running:
+      <pre>$ git clone git://github.com/bengolder/postsites</pre>
+    </p>
+
+    <div class="footer">
+      get the source code on GitHub : <a href="http://github.com/bengolder/postsites">bengolder/postsites</a>
+    </div>
+
+  </div>
+
+  
+</body>
+</html>
