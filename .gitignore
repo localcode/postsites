@@ -3,4 +3,5 @@
 *.swo
 configure.py
 import_data.py
+dataLoadingTest.py
 .DS_Store

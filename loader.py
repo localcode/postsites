@@ -248,10 +248,10 @@ class DataDirectory(object):
             print '''
             The xlwt module is not installed or is not available on
             sys.path. This function requires the xlwt module. Please
-            install, or add to sys.path and continue.'''
+            install, or add xlwt to sys.path to continue.'''
             return
         if not filePath:
-            filePath = 'xls_config_%s' % os.path.split(self.folder)[1]
+            filePath = 'xls_config_%s.xls' % os.path.split(self.folder)[1].replace(' ','_')
         # make two worksheets
         wb = xlwt.Workbook()
         # make a worksheet for unique projections
@@ -262,17 +262,18 @@ class DataDirectory(object):
                 "wkt",
                 ]
         projs = self.uniqueProjections
-        projRows = [[i,
+        projRows = [[i+1,
                      projs[i].epsg,
                      projs[i].wkt] for i in range(len(projs))]
         projRows.insert(0, proj_cols)
         for r in range(len(projRows)):
-            for c in range(len(row)):
+            for c in range(len(projRows[r])):
                 proj_sheet.write(r, c, projRows[r][c])
         # make a worksheet for the files
-        shp_sheet = wb.add sheet('Shapefiles')
+        shp_sheet = wb.add_sheet('Shapefiles')
         file_cols = [
-                'name',
+                'default name',
+                'layer name',
                 "projection",
                 "file path",
                 "shape type",
@@ -281,23 +282,29 @@ class DataDirectory(object):
                 "is building layer",
                 "z field",
                 ]
-        fileRows = [[
-                f.defaultName,
-                (self.uniqueProjections.index(f.proj)), # this might fail
-                f.filePath,
-                f.shpType,
-                f.isSiteLayer,
-                f.isTerrainLayer,
-                f.isBuildingLayer,
-                f.zField,
-                ] for f in self.files]
+        fileRows = []
+        for f in self.files:
+            row = []
+            row.append(f.defaultName)
+            row.append(f.defaultName) # use the default name as the layer name
+            if f.proj in self.uniqueProjections:
+                row.append(self.uniqueProjections.index(f.proj)+1)
+            else:
+                row.append('Unknown Projection')
+            row.append(f.filePath)
+            row.append(f.shpType)
+            row.append(f.isSiteLayer)
+            row.append(f.isTerrainLayer)
+            row.append(f.isBuildingLayer)
+            row.append(f.zField)
+            fileRows.append(row)
         fileRows.insert(0, file_cols)
         for r in range(len(fileRows)):
-            for c in range(len(row)):
+            for c in range(len(fileRows[r])):
                 shp_sheet.write(r, c, fileRows[r][c])
         # save the workbook
         wb.save(filePath)
-        self.configFile(filePath)
+        self.configFile = filePath
         return filePath
 
     def printProjections(self):

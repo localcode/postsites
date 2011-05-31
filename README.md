@@ -11,6 +11,17 @@ PostSites is being developed as part of the [Local Code](http://vimeo.com/808063
 
 PostSites needs [`psycopg2`](http://www.initd.org/psycopg/) and [`simplejson`](http://pypi.python.org/pypi/simplejson/) to be installed and available on `sys.path`. Note that [`simplejson` is included](http://stackoverflow.com/questions/712791/json-and-simplejson-module-differences-in-python) in the standard libraries for python 2.6 and later, as `json`. I'm using `simplejson` for backwards compatibility, so if you want to use python 2.5, you can. `postsites.py` attempts to import `simplejson` first, and if that doesn't work, attempts to import `json`.
 
+On Windows, in order to install third party modules (such as `psycopg2`, `simplejson`, `xlwt`, and `xlrd`) from command line with a tool like `easy_install` or `pip`, you will need to run the 'cmd' program as Administrator. To do this, simply right click on the 'cmd' program icon and select 'Run As Administrator'
+
+On Windows, to install `pip` (which is a tool that makes it very easy to install pythoon packages.), you should visit [this page](http://www.pip-installer.org/en/latest/installing.html#using-the-installer) and download the `get-pip.py` script. You will need to run the installer as administrator. Once you've done that, you can install all the depndencies using the following commands (While running as administrator) using 'cmd'.
+
+```bash
+pip install psycopg2
+pip install simplejson
+pip install xlwt
+pip install xlrd
+```
+
 ---
 
 ### Contents
