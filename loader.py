@@ -28,6 +28,19 @@ import os
 import sys
 from subprocess import Popen, PIPE
 
+# Third Party Imports
+try:
+    import xlwt
+    HAS_XLWT = True
+except:
+    HAS_XLWT = False
+
+try:
+    import xlrd
+    HAS_XLRD = True
+except:
+    HAS_XLRD = False
+
 # This module should check for and find the
 # necessary GIS libraries for loading data.
 #if PATH_TO_OGR:
@@ -208,6 +221,8 @@ class DataDirectory(object):
             return []
 
     def _browseFiles(self):
+        '''called when DataDirectories are created, this method searches the
+        designated folder for GIS data files and gathers their information.'''
         # depends on having the PATH set up correctly
         self.uniqueProjections = []
         self.files = []
@@ -226,6 +241,40 @@ class DataDirectory(object):
                     df.proj = p # tell the file which projection it has
             else: # has no proj file
                 self.unprojectedFiles.append(df)
+
+    def makeXlsConfig(self, filePath=None):
+        if not HAS_XLWT:
+            print '''
+            The xlwt module is not installed or is not available on
+            sys.path. Please install, or add to sys.path and continue.'''
+            return
+
+        if not filePath:
+            filePath = 'xls_config_%s' % os.path.split(self.folder)[1]
+
+        # make two worksheets
+
+        # make a worksheet for unique projections
+        proj_cols = [
+                "index",
+                "epsg",
+                "wkt",
+                ]
+
+
+        # make a worksheet for the files
+        file_cols = [
+                'db_name',
+                "projection",
+                "file_path",
+                "is_terrain",
+                "is_site_layer",
+                "is_building_layer",
+                "z_field",
+                ]
+
+
+
 
     def printProjections(self):
         projs = self.uniqueProjections
