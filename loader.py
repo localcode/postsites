@@ -417,14 +417,17 @@ def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
 
     # make the DataFiles
     files = []
+    for row in frows:
+        print row
     #for row in frows:
         #f = DataFile(row[fcindex['file path']]) # this will cause it to read the file
         #f.destLayer = row[fcindex['layer name']]
-        #f.isTerrainLayer = row[fcindex['is terrain']]
-        #f.isSiteLayer = row[fcindex['is site layer']]
-        #f.isBuildingLayer = row[fcindex['is building layer']]
+        #f.isTerrainLayer = bool(row[fcindex['is terrain']])
+        #f.isSiteLayer = bool(row[fcindex['is site layer']])
+        #f.isBuildingLayer = bool(row[fcindex['is building layer']])
         #f.zField = row[fcindex['z field']]
-        #f.proj = projections[row[fcindex['projection']] - 1]
+        #f.proj = projections[int(row[fcindex['projection']]) - 1]
+        #f.hasProj = True
         #files.append(f)
 
     # create or get the dataSource
@@ -434,8 +437,8 @@ def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
     else: # assume it's a DataSource object
         ds = dataSourceOrDbInfo
 
-    for f in files:
-        print f._getLoadArgs( ds )
+    #for f in files:
+        #print f._getLoadArgs( ds )
 
 
 if __name__=='__main__':
