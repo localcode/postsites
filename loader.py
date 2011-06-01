@@ -118,9 +118,6 @@ class Projection(object):
         self.wkt = wkt
         self.epsg = None
 
-    def setEPSG(self, epsgCode):
-        self.epsg = epsgCode
-
     def _inputFormat(self, index=None):
         return '''
         {
@@ -149,12 +146,14 @@ class DataFile(object):
     '''A DataFile obect holds information about a particular file of GIS data,
     and can be used to configure the way that the file should be loaded into
     the database.'''
-    def __init__(self, dataDirectory, filePath): # must be tied to a real file
+    def __init__(self, filePath): # must be tied to a real file
         self.fp = os.path.abspath(filePath) # make sure the path is a good one
         self.filePath = self.fp # shortcut !
-        self.dd = dataDirectory
         # ._readInfo fails silently, needs error raising.
+        self.baseWkt = None
+        self.proj = None
         self._readInfo() # this sets many attributes
+        self.hasProj = bool(self.baseWkt or self.proj)
 
         ## these attributes depend on a user's configuration and preferences
         self.destLayer = None
@@ -162,6 +161,7 @@ class DataFile(object):
         self.isBuildingLayer = False
         self.isSiteLayer = False
         self.zField = None
+        self.destinationEPSG = None
 
     # this method should be read upon initialization
     def _readProj(self):
@@ -171,10 +171,8 @@ class DataFile(object):
         if os.path.exists(projFilePath):
             wkt = open(projFilePath, 'r').read()
             self.baseWkt = wkt
-            self.hasProj = True
         else:
-            self.proj = None
-            self.hasProj = False
+            pass
 
     # this method should be read upon initialization
     def _readInfo(self):
@@ -198,7 +196,7 @@ class DataFile(object):
                               self.filePath, # file path
                               self.shpType, # shape Type
                               'EPSG:%s' % self.proj.epsg, #srs_in
-                              'EPSG:%s' % self.dd.destinationEPSG # srs_out
+                              'EPSG:%s' % self.destinationEPSG # srs_out
                               )
 
     def _load(self, dataSource):
@@ -358,7 +356,7 @@ EPSG codes for input can be found using these websites:
                     return
             else:
                 print 'no file exists at %s' % fp
-                return
+                rdeturn
         # next, look at proj_list
         if proj_list and type(proj_list) == list: # try to use the projection list
             try:
@@ -378,7 +376,7 @@ EPSG codes for input can be found using these websites:
             print "It appears to be a %s" % type(proj_list)
             return
 
-def loadByXls(xls_file, dbinfo, destinationEPSG='3785'):
+def loadByXls(xls_file, dataSource, destinationEPSG='3785'):
     if not HAS_XLRD:
         print '''
         The xlrd module is not installed or is not available on
@@ -403,24 +401,37 @@ def loadByXls(xls_file, dbinfo, destinationEPSG='3785'):
     for col in xlsInfo['file_cols']:
         col_index = file_col_names.index(col)
         fcindex[col] = col_index
-
-
+    # get the rows of each spreadsheet, and snip off the column names
+    # that are in the first row
     filePaths = file_sheet.col_values(fcindex['file path'])[1:]
     epsgs = proj_sheet.col_values(pcindex['epsg code'])[1:]
-    frows = [file_sheet.row_values(i+1) for i in range(len(filePaths)-1)]
-    prows = [proj_sheet.row_values(i+1) for i in range(len(epsgs)-1)]
-    print filePaths
-    print
-    print frows
-    print
-    print epsgs
-    print prows
+    frows = [file_sheet.row_values(i+1) for i in range(len(filePaths))]
+    prows = [proj_sheet.row_values(i+1) for i in range(len(epsgs))]
+
+    # make the projections
+    projections = []
+    for row in prows:
+        proj = Projection(row[pcindex['wkt']])
+        proj.epsg = int(row[pcindex['epsg code']])
+        projections.append(proj)
+
+    # make the DataFiles
+    files = []
+    #for row in frows:
+        #f = DataFile(row[fcindex['file path']]) # this will cause it to read the file
+        #f.destLayer = row[fcindex['layer name']]
+        #f.isTerrainLayer = row[fcindex['is terrain']]
+        #f.isSiteLayer = row[fcindex['is site layer']]
+        #f.isBuildingLayer = row[fcindex['is building layer']]
+        #f.zField = row[fcindex['z field']]
+        #f.proj = projections[row[fcindex['projection']] - 1]
+        #files.append(f)
+
+    for f in files:
+        print f._getLoadArgs
 
 
-    # new data directory is created and the files are read by ogrinfo
-    #dd = DataDirectory(filePaths)
-    #for f in dd.files:
-        # check the information and write anything new.
+
 
 
 

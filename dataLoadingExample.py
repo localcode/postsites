@@ -36,6 +36,6 @@ def loadXls():
     # EPSG 3785, which could be overrided with a third argument.
 
 if __name__=='__main__':
-    print loadXls()
+    loadXls()
 
 
