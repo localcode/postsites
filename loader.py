@@ -376,7 +376,7 @@ EPSG codes for input can be found using these websites:
             print "It appears to be a %s" % type(proj_list)
             return
 
-def loadByXls(xls_file, dataSource, destinationEPSG='3785'):
+def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
     if not HAS_XLRD:
         print '''
         The xlrd module is not installed or is not available on
@@ -427,18 +427,16 @@ def loadByXls(xls_file, dataSource, destinationEPSG='3785'):
         #f.proj = projections[row[fcindex['projection']] - 1]
         #files.append(f)
 
+    # create or get the dataSource
+    if type(dataSourceOrDbInfo) == dict: #it is dbinfo
+        from postsites import DataSource
+        ds = DataSource(dataSourceOrDbInfo)
+    else: # assume it's a DataSource object
+        ds = dataSourceOrDbInfo
+
     for f in files:
-        print f._getLoadArgs
+        print f._getLoadArgs( ds )
 
 
-
-
-
-
-
-
-
-
-
-    # load file in the file list
-
+if __name__=='__main__':
+    print 'hi'
