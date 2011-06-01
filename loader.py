@@ -57,6 +57,23 @@ shpTypeDict = {
         "3D Line String":'MULTILINESTRING25D'
         }
 
+xlsInfo = {'proj_cols':[
+                "index",
+                "epsg code",
+                "wkt",],
+           'file_cols':[
+                'default name',
+                'layer name',
+                "projection",
+                "file path",
+                "shape type",
+                "is site layer",
+                "is terrain",
+                "is building layer",
+                "z field",]
+        }
+
+
 def runArgs(args):
     '''run cmd, return (stdout, stderr).'''
     p = Popen(args, stdout=PIPE, stderr=PIPE)
@@ -92,6 +109,7 @@ def getShpFiles(folder):
                 shpList.append(os.path.join(dirPath, f))
     return shpList
 
+
 class Projection(object):
     '''A Projection object is used to wrap up a particular spatial reference
     system or spatial projection and is helpful for translating between
@@ -125,6 +143,7 @@ class Projection(object):
             #pass
         #else:
             #return 'must set EPSG code before fetching all representations'
+
 
 class DataFile(object):
     '''A DataFile obect holds information about a particular file of GIS data,
@@ -197,14 +216,9 @@ class DataDirectory(object):
     '''A DataDirectory object contains information about a folder
     of GIS data, and has methods for loading that data, as well as
     methods for configuring how that data will be loaded.'''
-    def __init__(self, folderPath, configFile=None):
-        # these should be set upon intialization
-        self.folder = folderPath
-        self.directory = self.folder # a shortcut!
-        self.dir = self.folder # a shortcut!
-        self._browseFiles()
-        self.configFile = None
-        #self.unprojectedFiles = None
+    def __init__(self, folderOrFileList ):
+        # read folder or file list
+        self._browseFiles( folderOrFileList )
 
         # these shouild be configured
         self.targetDataSource = None
@@ -221,15 +235,27 @@ class DataDirectory(object):
         else:
             return []
 
-    def _browseFiles(self):
+    def _browseFiles(self, folderOrFileList ):
         '''called when DataDirectories are created, this method searches the
         designated folder for GIS data files and gathers their information.'''
+        # determine whether the incoming data is a list or string
+        if type(folderOrFileList) == list:
+            # it's a list
+            shpFiles = folderOrFileList # done
+            self.folder = os.path.split(os.path.commonprefix(shpfiles))[0] # I LOVE stdlib!!!
+        elif type(folderOrFileList) == str:
+            # it's a folder
+            self.folder = folderOrFileList
+            shpFiles = getShpFiles(folderOrFileList)
+        else:
+            print 'please use a valid folder name or list of file paths to make a DataDirectory object'
+            return
         # depends on having the PATH set up correctly
         self.uniqueProjections = []
         self.files = []
         self.unprojectedFiles = []
         # set fileList
-        for fp in getShpFiles(self.folder):
+        for fp in shpFiles:
             df = DataFile(self, fp) # This line needs ogrinfo to be in the PATH
             self.files.append( df ) # add the datafile object
             if df.hasProj: # this file has a proj file
@@ -256,32 +282,16 @@ class DataDirectory(object):
         wb = xlwt.Workbook()
         # make a worksheet for unique projections
         proj_sheet = wb.add_sheet('Unique Projections')
-        proj_cols = [
-                "index",
-                "epsg code",
-                "wkt",
-                ]
         projs = self.uniqueProjections
         projRows = [[i+1,
                      projs[i].epsg,
                      projs[i].wkt] for i in range(len(projs))]
-        projRows.insert(0, proj_cols)
+        projRows.insert(0, xlsInfo['proj_cols']) # column headers in xlsInfo dict
         for r in range(len(projRows)):
             for c in range(len(projRows[r])):
                 proj_sheet.write(r, c, projRows[r][c])
         # make a worksheet for the files
         shp_sheet = wb.add_sheet('Shapefiles')
-        file_cols = [
-                'default name',
-                'layer name',
-                "projection",
-                "file path",
-                "shape type",
-                "is site layer",
-                "is terrain",
-                "is building layer",
-                "z field",
-                ]
         fileRows = []
         for f in self.files:
             row = []
@@ -298,7 +308,7 @@ class DataDirectory(object):
             row.append(f.isBuildingLayer)
             row.append(f.zField)
             fileRows.append(row)
-        fileRows.insert(0, file_cols)
+        fileRows.insert(0, xlsInfo['file_cols']) # column headers in xlsInfo dict
         for r in range(len(fileRows)):
             for c in range(len(fileRows[r])):
                 shp_sheet.write(r, c, fileRows[r][c])
@@ -368,5 +378,56 @@ EPSG codes for input can be found using these websites:
             print "It appears to be a %s" % type(proj_list)
             return
 
+def loadByXls(xls_file, dbinfo, destinationEPSG='3785'):
+    if not HAS_XLRD:
+        print '''
+        The xlrd module is not installed or is not available on
+        sys.path. This function requires the xlrd module. Please
+        install, or add xlrd to sys.path to continue.'''
+        return
+    book = xlrd.open_workbook(xls_file)
+    proj_sheet = book.sheet_by_name('Unique Projections')
+    file_sheet = book.sheet_by_name('Shapefiles')
 
+    # read and parse the xls file, use it to build a DataDirectory
+    # Get eh column names
+    proj_col_names = proj_sheet.row_values(0)
+    file_col_names = file_sheet.row_values(0)
+    # read the xls file and separate it by column
+    # map the columsn to the column names
+    pcindex = {}
+    fcindex = {}
+    for col in xlsInfo['proj_cols']:
+        col_index = proj_col_names.index(col)
+        pcindex[col] = col_index
+    for col in xlsInfo['file_cols']:
+        col_index = file_col_names.index(col)
+        fcindex[col] = col_index
+
+
+    filePaths = file_sheet.col_values(fcindex['file path'])[1:]
+    epsgs = proj_sheet.col_values(pcindex['epsg code'])[1:]
+    frows = [file_sheet.row_values(i+1) for i in range(len(filePaths)-1)]
+    prows = [proj_sheet.row_values(i+1) for i in range(len(epsgs)-1)]
+    print filePaths
+    print
+    print frows
+    print
+    print epsgs
+    print prows
+
+
+    # new data directory is created and the files are read by ogrinfo
+    #dd = DataDirectory(filePaths)
+    #for f in dd.files:
+        # check the information and write anything new.
+
+
+
+
+
+
+
+
+    # load file in the file list
 
