@@ -164,10 +164,35 @@ Example of Planned Use:
 >>> dd.loadOne( ds, 'outlines.shp', 'state_outlines')
 ```
 
-## Some Common Spatial Reference Codes:
+## Some Notes About Spatial Reference Codes:
 
-* *EPSG 4327*: WGS 1984, a lat/long geographic coordinate system that extremely common, and the default for all TIGER data.
-* *EPSG 3857*: A Spherical Mercator Projection used in Google Maps and Open Street Maps. Units in lat/long.
+Two excellent resources for looking up and verifying the EPSG codes for a given
+spatial reference are [spatialreference.org](http://spatialreference.org/) and
+[prj2epsg.org](http://prj2epsg.org/search). ogr2ogr (the tool used for loading
+data in PostSites) is able to read and translate many spatial reference systems
+automatically, but it is better to always check your coordinate systems and
+ensure that they are transforming _from_ the correct projection _to_ the
+correct projection. Additionally, it is common to encounter spatial reference
+systems that are unknown or unfamiliar to ogr2ogr's algorithms. In the U.S.,
+There are numerous State Plane Projections, and a lot of GIS data is in this
+format. Here's an example of a California State Plane projection, used in much of
+Los Angeles County's GIS data:
+
+```
+PROJCS["NAD_1983_StatePlane_California_V_FIPS_0405_Feet",GEOGCS["GCS_North_American_1983",DATUM["D_North_American_1983",SPHEROID["GRS_1980",6378137.0,298.257222101]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]],PROJECTION["Lambert_Conformal_Conic"],PARAMETER["False_Easting",6561666.666666666],PARAMETER["False_Northing",1640416.666666667],PARAMETER["Central_Meridian",-118.0],PARAMETER["Standard_Parallel_1",34.03333333333333],PARAMETER["Standard_Parallel_2",35.46666666666667],PARAMETER["Latitude_Of_Origin",33.5],UNIT["Foot_US",0.3048006096012192]]
+```
+
+If we spend some time looking this up at the sites mentioned above, you'll find
+the best match is `ESRI:102645`. ogr2ogr does contain this projection in its
+list of projections, but it is instead listed as `EPSG:102645`. So when loading
+my data using PostSites, I will simply enter `102645` as the EPSG code for any
+data layers in this projection.
+
+Some other common projections:
+
+* *EPSG 4326*: WGS 1984, a lat/long geographic coordinate system that extremely common, and the default for all TIGER data. Units in degrees.
+* *EPSG 3785*: A Spherical Mercator Projection used in Google Maps and Open Street Maps. Units in meters.
+* *EPSG 4269*: North American Datum 1983 Geographic Coordinate System. Units in degrees
 
 
 
