@@ -79,22 +79,6 @@ def runArgs(args):
     p = Popen(args, stdout=PIPE, stderr=PIPE)
     return p.communicate() # returns (stdout, stderr)
 
-def generateLoadArgs(dbInfo, path, shpType, srs_in, srs_out):
-    '''generates command line arguments based on configurations
-    and information about a specific file.'''
-    (userName, dbName, password) = dbInfo['user'], dbInfo['dbname'], dbInfo['password']
-    args = ['ogr2ogr',
-            '-t_srs "%s"' % srs_out,
-            '-s_srs "%s"' % srs_in,
-            '-f "PostgreSQL"', '-overwrite',
-            'PG:"user=%s dbname=%s password=%s"' % (userName, dbName, password),
-            "%s" % path,
-            # dbf files falsely claim precisions, the next arg deals with that
-            '-lco PRECISION=NO',
-            '-nlt %s' % shpType,
-            ]
-    return args
-
 def getShpFiles(folder):
     """this function returns a list of all the
     shapefiles contained within the input folder
@@ -186,18 +170,29 @@ class DataFile(object):
         else:
             rlayName, rshpType = out.split('\n')[2].split(' (')
             self.defaultName = rlayName.split()[1]
+            self.destLayer = self.defaultName
             self.shpType = rshpType.split(')')[0]
             self._readProj()
 
     # this method should be called to load the file
     # and only after the loading has been configured
     def _getLoadArgs(self, dataSource):
-        return generateLoadArgs(dataSource.dbinfo, # connectioninfo
-                              self.filePath, # file path
-                              self.shpType, # shape Type
-                              'EPSG:%s' % self.proj.epsg, #srs_in
-                              'EPSG:%s' % self.destinationEPSG # srs_out
-                              )
+        u, db, pw = dataSource.dbinfo['user'], dataSource.dbinfo['dbname'], dataSource.dbinfo['password']
+        args = ['ogr2ogr',
+                '-t_srs "%s"' % dataSource.destinationEPSG,
+                '-s_srs "%s"' % self.proj.epsg,
+                '-f "PostgreSQL"',
+                '-%s' % dataSource.writeMode, #'-append', or '-overwrite'
+                'PG:"user=%s dbname=%s password=%s"' % (u, db, pw),
+                "%s" % self.filePath,
+                # dbf files falsely claim precisions, the next arg deals with that
+                '-lco PRECISION=NO',
+                '-nln %s' % self.destlayer
+                '-nlt %s' % shpTypeDict[self.shpType], # get the OGC shape type
+                ]
+        if self.zField:
+            args.append('-zfield %s' % self.zField )
+        return args
 
     def _load(self, dataSource):
         # depends on subprocess module
@@ -418,17 +413,15 @@ def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
     # make the DataFiles
     files = []
     for row in frows:
-        print row
-    #for row in frows:
-        #f = DataFile(row[fcindex['file path']]) # this will cause it to read the file
-        #f.destLayer = row[fcindex['layer name']]
-        #f.isTerrainLayer = bool(row[fcindex['is terrain']])
-        #f.isSiteLayer = bool(row[fcindex['is site layer']])
-        #f.isBuildingLayer = bool(row[fcindex['is building layer']])
-        #f.zField = row[fcindex['z field']]
-        #f.proj = projections[int(row[fcindex['projection']]) - 1]
-        #f.hasProj = True
-        #files.append(f)
+        f = DataFile(row[fcindex['file path']]) # this will cause it to read the file
+        f.destLayer = row[fcindex['layer name']]
+        f.isTerrainLayer = bool(row[fcindex['is terrain']])
+        f.isSiteLayer = bool(row[fcindex['is site layer']])
+        f.isBuildingLayer = bool(row[fcindex['is building layer']])
+        f.zField = row[fcindex['z field']]
+        f.proj = projections[int(row[fcindex['projection']]) - 1]
+        f.hasProj = True
+        files.append(f)
 
     # create or get the dataSource
     if type(dataSourceOrDbInfo) == dict: #it is dbinfo
@@ -437,8 +430,8 @@ def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
     else: # assume it's a DataSource object
         ds = dataSourceOrDbInfo
 
-    #for f in files:
-        #print f._getLoadArgs( ds )
+    for f in files:
+        print ' '.join(f._getLoadArgs( ds ))
 
 
 if __name__=='__main__':
