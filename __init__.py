@@ -106,16 +106,29 @@ def makeTerrainJSON(layer, terrainData):
     # geometry and take out Zs and triangulate
     layerDict = {'type': 'Layer', 'name':layer.name}
     geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
-    for row in data: # each row will contain a point
+    points2d = []
+    pointZs = []
+    pointAttributes = []
+    for row in terrainData: # each row will contain a point
         rawJSON, columnData = row[0], row[1:]
         geomJSON = json.loads(rawJSON)
         # here is where I should triangulate it.
-        attributeDictionary = dict(zip(layer.cols, columnData))
-        featureDict = {'type':'Feature'}
-        featureDict['geometry'] = geomJSON
-        featureDict['properties'] = attributeDictionary
-        geoJSONDict['features'].append(featureDict)
+        point = geomJSON['coordinates']
+        point2d, pointZ = [point[0], point[1]], point[2]
+        points2d.append(point2d)
+        pointZs.append(pointZ)
+        pointAttributes.append(columnData)
+    # now triangulate the points2d
+
+
+
+
     layerDict['contents'] = geoJSONDict
+    attributeDictionary = dict(zip(layer.cols, columnData))
+    featureDict = {'type':'Feature'}
+    featureDict['geometry'] = geomJSON
+    featureDict['properties'] = attributeDictionary
+    geoJSONDict['features'].append(featureDict)
     if layer.color:
         layerDict['color'] = layer.color
     return layerDict
