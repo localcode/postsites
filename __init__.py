@@ -131,6 +131,7 @@ class ConfigurationInfo(object):
         self.siteLayer = None
         self.buildingLayer = None
         self.siteRadius = 100 # a default distance
+        self.useBoundingBox = False # would use bounding box to get data, faster
         self.sitePropertiesScript = None
         self.force2d = False
         self.getNearbySites = True
@@ -158,6 +159,10 @@ class Layer(object):
 
 class Site(object):
     """Used to hold information about individual sites."""
+    # Site objects could be pre-generated in order to make
+    # queries faster. There could be a command called
+    # 'buildSites' that would create some tables
+    # and store some site information.
     def __init__(self, id):
         self.id = None
         self.layers = []
