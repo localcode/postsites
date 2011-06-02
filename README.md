@@ -5,7 +5,7 @@
 PostSites is a set of python modules for managing PostGIS data sets and retrieving multiple layers of spatial data for a set of sites, represented by the features on a particular layer. It allows one to retrieve multple layers of data based on proximity to a point, and for organizing layers into specific types (such as terrain, parcels, etc.) that can be used for 3d modeling or visualization.
 
 
-PostSites is being developed as part of the [Local Code](http://vimeo.com/8080630) project under the leadership of [Nicholas de Monchaux](www.nicholas.demonchuax.com), Assistant Professor of Architecture and Urban Design at the [UC Berkeley College of Environmental Design](http://ced.berkeley.edu/).
+PostSites is being developed as part of the [Local Code](http!w!7<Mouse>C!x!7<Mouse>C!y!7<Mouse>C!z!7
 
 ### Dependencies
 
@@ -34,63 +34,50 @@ pip install xlrd
 
 ---
 
-### Example of Use
+### Examples of Use
 
 Disclaimer: I wrote this usage example _before_ I started writing out the code, in order to help me figure out what I _want_ it to do. It will work pretty similar to this.
 
 
-```python
->>> # get connection info
->>> from configure import dbinfo
->>> # dbinfo is a dictionary with 'user', 'dbname', and 'password' keys
->>> # Make some stuff
->>> from layers import physical, sites
->>> layerDict = dict(physical.items() + sites.items())
->>> config = ConfigurationInfo()
->>> config.layers = dictToLayers(layerDict)
->>> config.siteLayer = 'vacantparcels'
->>> config.terrainLayer = 'terrain'
->>> config.buildingLayer = 'buildings'
->>>
->>> ds = DataSource(dbinfo)
->>> ds.config = config
->>> for layer in ds.config.layers:
->>>     print layer.name, layer.name_in_db, layer.cols
-buildings doitt_building_01_28jul2009 ['ogc_fid', 'bin']
-transportation doitt_transportation_structure_01_28jul2009 ['ogc_fid']
-vacantparcels newyork_parcels ['ogc_fid', 'borough', 'block', 'lot', 'zipcode', 'address', 'landuse', 'ownername', 'lotfront', 'lotdepth', 'assessland', 'assesstot', 'exemptland', 'exempttot']
-sidewalks doitt_sidewalk_01_28jul2009 ['ogc_fid']
-medians doitt_median_01_28jul2009 ['ogc_fid', 'street_nam']
-hydrostructures doitt_hydrography_structure_01_28jul2009 ['ogc_fid']
-terrain terrain_points ['ogc_fid']
-parkinglots doitt_parking_lot_01_28jul2009 ['ogc_fid']
-hydrography doitt_hydrography_01_282009 ['ogc_fid']
-paperstreets newyork_paperstreets ['ogc_fid', 'objectid', 'street']
->>>
->>> ds.getSiteJSON( id=200 )
-{'Layers':[{'layer':'site', {'type':'Feature', 'geometry': {...}, 'properties':{...}}},
-        {'layer':'terrain', {'type':'FeatureCollection':[ ... ]}},
-        {'layer':'othersites', 'FeatureCollection':[ ... ]},
-        {'layer':'buildings', 'FeatureCollection':[ ... ]}],
-        'SiteProperties': {'prop0':'value0', ... }}
->>> ds.getSite( id=190 )
-<Site object:'site 190'>
->>> s = Site(ds, id=200)
->>> s2 = Site(ds, query='assess_val = 3000')
->>> s.properties
-None
->>> s.build() # retrieves the site data and builds
->>> s.properties
-{'prop0':'value0', ... }
->>> s.layers
-[<Layer object:'terrain'>, <Layer object:'buildings'>, ... ]
->>> s.prop0
-'value0'
->>> layer = s.layers[2]
->>> layer.features
-{'FeatureCollection':[ ... ]}
 
+First, we'll designate a folder that contains our shapefiles. PostSites will detect
+any shapefiles that inside this folder, even if they are nested into other folders.
+
+```python
+>>> my_data_folder = 'C:\Users\myusername\Desktop\GIS data'
 ```
+
+The next command is a utility that makes it easy to configure how
+our shapefiles are loaded into the PostGIS database.
+It gives you one spreadsheet with all unique spatial reference systems
+and another sheet that lets you configure information about each file
+as well as letting you define any unknown projections. See the tutorials for
+examples of how to edit this file.
+
+```python
+>>> import postsites
+>>> f = postsites.makeXlsConfigurationFile(my_data_folder)
+>>> f
+'xls_config_GIS_data.xls' # the name of the resulting file.
+```
+
+Once you have edited the 'xls_config_GIS_data.xls' file, you can use it to load
+everything into the database ...
+
+```python
+>>> dbinfo = {'user':'me', 'dbname':'mydb', 'password':'s3cr3TP455w0rdZ'} # this is needed to connect to the db
+>>> ds = postsites.loadFromXlsConfigurationFile( f, dbinfo ) # this may take a while, go get a coffee
+>>> ds # ds is a DataSource object that we can use to retrieve and configure site information.
+<postsites.DataSource object>
+```
+
+Did you like that? Only three steps in order to get from a folder to a thing
+that can retrieve sites. Next, we can start getting GeoJSON data for a site like this:
+
+```python
+>>> mysiteJson = ds.getSiteJson(id=203)
+```
+
 
 ### The `sqls.py` module
 
