@@ -100,16 +100,37 @@ def makeLayerJSON(layer, data):
         layerDict['color'] = layer.color
     return layerDict
 
+def makeTerrainJSON(layer, terrainData):
+    # this should create a different json type. How about
+    # 'MESH'? It will also need to iterate through the
+    # geometry and take out Zs and triangulate
+    layerDict = {'type': 'Layer', 'name':layer.name}
+    geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
+    for row in data: # each row will contain a point
+        rawJSON, columnData = row[0], row[1:]
+        geomJSON = json.loads(rawJSON)
+        # here is where I should triangulate it.
+        attributeDictionary = dict(zip(layer.cols, columnData))
+        featureDict = {'type':'Feature'}
+        featureDict['geometry'] = geomJSON
+        featureDict['properties'] = attributeDictionary
+        geoJSONDict['features'].append(featureDict)
+    layerDict['contents'] = geoJSONDict
+    if layer.color:
+        layerDict['color'] = layer.color
+    return layerDict
 
 class ConfigurationInfo(object):
     """Used to configure layers and site query parameters."""
     def __init__(self):
         self.layers = None
+        self.layerLoadResults = None # store results from loading operations
+        # results should store ( layer, loaded:True/False, result message )
         self.terrainLayer = None
         self.layerDict = None
         self.siteLayer = None
         self.buildingLayer = None
-        self.siteRadius = None
+        self.siteRadius = 100 # a default distance
         self.sitePropertiesScript = None
         self.force2d = False
         self.getNearbySites = True
@@ -271,7 +292,7 @@ class DataSource(object):
         siteDict["layers"] = []
         # get the site layer
         if self.config.siteLayer:
-            site_layer = [n for n in self.config.layers if n.name == self.config.siteLayer][0]
+            site_layer = self.config.siteLayer
         # For each layer
         for layer in self.config.layers:
             #print 'Getting Layer %s from PostgreSQL' % layer.name
@@ -293,6 +314,16 @@ class DataSource(object):
                         otherSitesJson = makeLayerJSON(layer, otherSitesData)
                         otherSitesJson["name"] = "othersites"
                         siteDict["layers"].append( otherSitesJson )
+            elif layer == self.config.terrainLayer:
+                # process the terrain
+                layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
+                        layer.cols, id, self.config.siteRadius)
+                terrainData = self._run(layerSQL)
+                if len(terrainData > 0):
+                    # this should create a different json type. How about
+                    # 'MESH'?
+                    terrainJson = makeTerrainJson(layer, terrainData)
+
             else: # this is some other layer
                 layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
                         layer.cols, id, self.config.siteRadius)
