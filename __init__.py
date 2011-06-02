@@ -121,7 +121,7 @@ def makeTerrainJSON(layer, terrainData):
     geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
     points2d = []
     pointZs = []
-    pointAttributes = []
+    pointAttributes = [] # a list of attribute values for each point
     for row in terrainData: # each row will contain a point
         rawJSON, columnData = row[0], row[1:]
         geomJSON = json.loads(rawJSON)
@@ -130,26 +130,20 @@ def makeTerrainJSON(layer, terrainData):
         point2d, pointZ = [point[0], point[1]], point[2]
         points2d.append(point2d)
         pointZs.append(pointZ)
+        # this creates one list for each point
         pointAttributes.append(columnData)
     # now triangulate the points2d
     tris = triangulate(points2d)
-    # this will be returned as
-    geomJSON = {'type': 'Mesh'}
+    geomJSON = {'type': 'Mesh'} # a new geoJSON type!
     geomJSON['coordinates'] = points
     geomJSON['faces'] = tris
-
-
-
-
-
-
-
-    layerDict['contents'] = geoJSONDict
-    attributeDictionary = dict(zip(layer.cols, columnData))
+    transposedAttributes = zip(*pointAttributes) #omg hack!
+    attributeDictionary = dict(zip(layer.cols, transposedAttributes)) # I think this should work
     featureDict = {'type':'Feature'}
     featureDict['geometry'] = geomJSON
     featureDict['properties'] = attributeDictionary
     geoJSONDict['features'].append(featureDict)
+    layerDict['contents'] = geoJSONDict
     if layer.color:
         layerDict['color'] = layer.color
     return layerDict
