@@ -62,6 +62,13 @@ try: #try to import json
 except: #if json doesn't work, try simplejson
     import simplejson as json
 
+try:
+    import numpy as np
+    import scipy.spatial.qhull as qhull
+    HAS_SCIPY = True
+except:
+    HAS_SCIPY = False
+
 # local package imports
 import loader
 import sqls
@@ -104,6 +111,12 @@ def makeTerrainJSON(layer, terrainData):
     # this should create a different json type. How about
     # 'MESH'? It will also need to iterate through the
     # geometry and take out Zs and triangulate
+    if not HAS_SCIPY:
+        print '''NumPy and SciPy must be installed in order to triangulate
+        terrain. Please ensure that both are installed and available on
+        sys.path.'''
+        return
+    from triforce import triangulate
     layerDict = {'type': 'Layer', 'name':layer.name}
     geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
     points2d = []
@@ -119,6 +132,8 @@ def makeTerrainJSON(layer, terrainData):
         pointZs.append(pointZ)
         pointAttributes.append(columnData)
     # now triangulate the points2d
+    tris = triangulate(points2d)
+
 
 
 
