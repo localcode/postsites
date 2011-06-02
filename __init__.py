@@ -46,8 +46,7 @@ everything into the database ...
     >>> ds # ds is a DataSource object that we can use to retrieve and configure site information.
     <postsites.DataSource object>
 
-Did you like that? Only three steps in order to get from a folder to a thing
-that can retrieve sites. Next, we can start getting GeoJSON data for a site like this:
+Next, we can start getting JSON data for a site like this:
 
     >>> mysiteJson = ds.getSiteJson(id=203)
 
@@ -115,6 +114,9 @@ class ConfigurationInfo(object):
         self.force2d = False
         self.getNearbySites = True
 
+    def layerByName(self, name):
+        return [n for n in self.layers if n.name == name][0]
+
 class Layer(object):
     """Used to hold information about individual layers."""
 
@@ -169,8 +171,10 @@ class DataSource(object):
         self.dbname = dbinfo['dbname']
         self.dbpassword = dbinfo['password']
         self.dbinfo = dbinfo
-        self.config = None
+        self.config = ConfigurationInfo()
         self.connection = None
+        self.writeMode = 'overwrite' #'overwrite' or 'append' are only options
+        self.epsg = 3785 # default epsg, look it up
 
     def __unicode__(self):
         return 'DataSource: dbname=%s' % self.dbname
@@ -298,6 +302,62 @@ class DataSource(object):
         # close connection
         self._close()
         return json.dumps(siteDict)
+
+    def loadDataFile(self, dataFile, verbose=False):
+        '''for loading one DataFile object'''
+        # make sure some layers exist
+        if not self.config.layers:
+            self.config.layers = []
+        # if a layer with that name exists, get it
+        if dataFile.destLayer in [lay.name for lay in self.config.layers]:
+            layer = self.config.layerByName(dataFile.destLayer)
+        else:
+            print 'New Layer:', dataFile.destLayer
+            # make a Layer object
+            layer = Layer(dataFile.destLayer)
+        # we're building the db, so this will be true
+        layer.name_in_db = layer.name
+        # get configuration info from the DataFile
+        if dataFile.isTerrainLayer:
+            self.config.terrainLayer = layer
+        if dataFile.isBuildingLayer:
+            self.config.buildingLayer = layer
+        if dataFile.isSiteLayer:
+            self.config.siteLayer = layer
+        if dataFile.zField:
+            layer.zColumn = dataFile.zField
+        # put it in the configuration layer list
+        self.config.layers.append(layer)
+        # now load it
+        result = dataFile._load(self)
+        # this part should better report progress and stuff
+        if verbose:
+            print result
+        return result
+
+    def loadDataFiles(self, dataFiles, verbose=False):
+        '''for loading multiple DataFile objects.'''
+        loadedLayers = []
+        return_vals = []
+        for df in dataFiles:
+            if df.destLayer in loadedLayers: # existing layer
+                self.writeMode = 'append'
+            else: # new layer
+                self.writeMode = 'overwrite'
+                loadedLayers.append(df.destLayer)
+            # load the file, what is returned?
+            return_vals.append( self.loadDataFile( df, verbose ))
+        return return_vals
+
+
+def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
+                                  verbose=False):
+    projections, files = loader.parseXlsFile( xlsFile )
+    ds = DataSource( dbinfo )
+    ds.epsg = destinationEPSG
+    results = ds.loadDataFiles( files, verbose )
+    return ds, results
+
 
 
 if __name__=='__main__':

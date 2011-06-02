@@ -145,7 +145,6 @@ class DataFile(object):
         self.isBuildingLayer = False
         self.isSiteLayer = False
         self.zField = None
-        self.destinationEPSG = None
 
     # this method should be read upon initialization
     def _readProj(self):
@@ -179,15 +178,15 @@ class DataFile(object):
     def _getLoadArgs(self, dataSource):
         u, db, pw = dataSource.dbinfo['user'], dataSource.dbinfo['dbname'], dataSource.dbinfo['password']
         args = ['ogr2ogr',
-                '-t_srs "%s"' % dataSource.destinationEPSG,
-                '-s_srs "%s"' % self.proj.epsg,
+                '-t_srs "EPSG:%s"' % dataSource.epsg,
+                '-s_srs "EPSG:%s"' % self.proj.epsg,
                 '-f "PostgreSQL"',
                 '-%s' % dataSource.writeMode, #'-append', or '-overwrite'
                 'PG:"user=%s dbname=%s password=%s"' % (u, db, pw),
-                "%s" % self.filePath,
+                '"%s"' % self.filePath,
                 # dbf files falsely claim precisions, the next arg deals with that
                 '-lco PRECISION=NO',
-                '-nln %s' % self.destlayer
+                '-nln %s' % self.destLayer,
                 '-nlt %s' % shpTypeDict[self.shpType], # get the OGC shape type
                 ]
         if self.zField:
@@ -196,9 +195,9 @@ class DataFile(object):
 
     def _load(self, dataSource):
         # depends on subprocess module
-        args = self._getloadArgs( dataSource ) # this needs to be a list, not a string
+        args = self._getLoadArgs( dataSource ) # this needs to be a list, not a string
         # use subprocess to run cmd
-        out, err = runArgs(args)
+        out, err = runArgs(' '.join(args)) # I thought Popen could join these better, but it doesn't :(
         if len(err) > 0: # if there's an error
             return False, err # return the error
         else:
@@ -371,7 +370,9 @@ EPSG codes for input can be found using these websites:
             print "It appears to be a %s" % type(proj_list)
             return
 
-def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
+def parseXlsFile(xls_file):
+    '''Parses an xls file into Projection and DataFile objects.
+    Returns list of Projection objects, and list of DataFile objects.'''
     if not HAS_XLRD:
         print '''
         The xlrd module is not installed or is not available on
@@ -381,9 +382,7 @@ def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
     book = xlrd.open_workbook(xls_file)
     proj_sheet = book.sheet_by_name('Unique Projections')
     file_sheet = book.sheet_by_name('Shapefiles')
-
-    # read and parse the xls file, use it to build a DataDirectory
-    # Get eh column names
+    # Get the column names
     proj_col_names = proj_sheet.row_values(0)
     file_col_names = file_sheet.row_values(0)
     # read the xls file and separate it by column
@@ -402,14 +401,12 @@ def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
     epsgs = proj_sheet.col_values(pcindex['epsg code'])[1:]
     frows = [file_sheet.row_values(i+1) for i in range(len(filePaths))]
     prows = [proj_sheet.row_values(i+1) for i in range(len(epsgs))]
-
     # make the projections
     projections = []
     for row in prows:
         proj = Projection(row[pcindex['wkt']])
         proj.epsg = int(row[pcindex['epsg code']])
         projections.append(proj)
-
     # make the DataFiles
     files = []
     for row in frows:
@@ -422,17 +419,5 @@ def loadByXls(xls_file, dataSourceOrDbInfo, destinationEPSG='3785'):
         f.proj = projections[int(row[fcindex['projection']]) - 1]
         f.hasProj = True
         files.append(f)
+    return projections, files
 
-    # create or get the dataSource
-    if type(dataSourceOrDbInfo) == dict: #it is dbinfo
-        from postsites import DataSource
-        ds = DataSource(dataSourceOrDbInfo)
-    else: # assume it's a DataSource object
-        ds = dataSourceOrDbInfo
-
-    for f in files:
-        print ' '.join(f._getLoadArgs( ds ))
-
-
-if __name__=='__main__':
-    print 'hi'
