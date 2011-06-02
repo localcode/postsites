@@ -133,6 +133,12 @@ def makeTerrainJSON(layer, terrainData):
         pointAttributes.append(columnData)
     # now triangulate the points2d
     tris = triangulate(points2d)
+    # this will be returned as
+    geomJSON = {'type': 'Mesh'}
+    geomJSON['coordinates'] = points
+    geomJSON['faces'] = tris
+
+
 
 
 
