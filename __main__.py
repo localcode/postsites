@@ -35,25 +35,29 @@ def run():
         result = raw_input("or press 'Enter' if it is in this folder:\n%s" % os.getcwd())
         if result == '': # they said it is in the current directory
             files = getXlsFiles(os.getcwd())
-            if not (type(files) == list):
-                print files
-                return
-            elif len(files) == 1:
-                yes = raw_input( "If the xls file is '%s', press 'Enter'." % files[0])
-                if yes == '':
-                    xls = files[0]
-                else:
-                    print 'start over'
-                    return
+        else:
+            files = getXlsFiles(clean(result))
 
-            elif len(files) > 1:
-                print
-                print 'I found these files, which one is it?'
-                for i in range(len(files)):
-                    print '%s: %s' % (i+1, files[i])
-                print
-                n = clean(raw_input("Please enter the number of the correct file."))
-                xls = files[n-1]
+        if not (type(files) == list):
+            print files
+            return
+        elif len(files) == 1:
+            yes = raw_input( "If the xls file is '%s', press 'Enter'." % files[0])
+            if yes == '':
+                xls = files[0]
+            else:
+                print 'start over'
+                return
+
+        elif len(files) > 1:
+            print
+            print 'I found these files, which one is it?'
+            for i in range(len(files)):
+                print '%s: %s' % (i+1, files[i])
+            print
+            n = clean(raw_input("Please enter the number of the correct file."))
+            xls = files[n-1]
+
 
 
         print
