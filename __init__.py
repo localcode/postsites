@@ -430,36 +430,48 @@ def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
     results = ds.loadDataFiles( files, verbose )
     return ds, results
 
+def clean(rawInput):
+    out = rawInput.strip()
+    return out
 
+def getXlsFiles(folder):
+    a = [os.path.split(m)[1] for m in os.path.listdir(folder) if os.path.splitext(m)[1] == '.xls']
+    if len(a) > 0:
+        return a
+    else:
+        f = 'There are no xls files in this folder'
+        m = 'Please enter a different folder'
+        return (f + m)
 
-if __name__=='__main__':
+def test(cmd, ):
 
     import sys
 
-    # get connection info
-    from configure import dbinfo
+    command, folder = sys.argv[1], sys.argv[2]
 
-    # get layer configuration info
-    from amigos_layers import amigos_test
+    folder = os.path.abspath(folder)
 
-    # Configure the data and site parameters
-    config = ConfigurationInfo()
-    config.layers = dictToLayers(amigos_test)
-    config.siteLayer = 'sites'
-    config.siteRadius = 600
+    if command == 'makexls':
+        return makeXlsConfigurationFile( folder )
 
-    # set up the DataSource
-    ds = DataSource(dbinfo)
-    # print the layers
-    #tableList = ds.viewLayers() # this should print some things
+    elif command == 'loadxls':
+        print 'Please enter the name of the xls file you would like to load,'
+        print 'or the name of the folder where it is located.'
+        result = raw_input("or press 'Enter' if it is in this folder:\n%s" % os.getcwd())
+        if result == '': # they said it is in the current directory
+            print getXlsFiles(os.getcwd())
 
-    # give it the configuration
-    ds.config = config
-    #print '\n'.join([layer.name for layer in ds.config.layers])
 
-    # get one Site
-    #print ds.getSiteJSON(sys.argv[1])
+        print 'Be sure that you have created a spatial database in PostgreSQL'
+        dbuser = raw_input('Please enter the database user name:\n')
+        dbname = raw_input('Please enter the name of the spatial database:\n')
+        dbpassword = raw_input('Please enter the password for the database:\n')
+        user, db, pw = [clean(i) for i in [dbuser, dbname, dbpassword]]
 
-    s = sqls.getLayer('proposed_sites', 'tinnode406', ['elevation',], 20, 100000)
-    print s
-    print ds._connectAndRun(s)
+
+
+        print 'Thanks!'
+        dbinfo = {'user':user, 'dbname':db, 'password':pw}
+
+        return
+

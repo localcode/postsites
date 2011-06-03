@@ -161,13 +161,18 @@ class DataFile(object):
     def _readInfo(self):
         '''called by __init__, reads info from file to populate attribute values.
         sets defaultName, shpType, and calls _getProj to try to get projection.
-        this method depnds on having ogrinfo available on the system PATH.'''
-        args = ['ogrinfo', '-ro', self.filePath]
-        out, err = runArgs(' '.join(args))
+        this method depnds on having ogrinfo available on the system PATH. This
+        needs lots of error catching because it depends on good input and
+        having lots of tools available.'''
+        args = ' '.join(['ogrinfo', '-ro', self.filePath])
+        out, err = runArgs( args )
         if len(err) > 0: # if there's an error
             return err # return the error
         else:
-            rlayName, rshpType = out.split('\n')[2].split(' (') # read ogrinfo results
+            try:
+                rlayName, rshpType = out.split('\n')[2].split(' (') # read ogrinfo results
+            except:
+                return 'Error running command: %s' % args
             self.defaultName = rlayName.split()[1]
             self.destLayer = self.defaultName
             self.shpType = rshpType.split(')')[0]
@@ -211,7 +216,6 @@ class DataDirectory(object):
     def __init__(self, folderOrFileList ):
         # read folder or file list
         self._browseFiles( folderOrFileList )
-
         # these shouild be configured
         self.targetDataSource = None
         self.destinationEPSG = None
