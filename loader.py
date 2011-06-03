@@ -163,11 +163,11 @@ class DataFile(object):
         sets defaultName, shpType, and calls _getProj to try to get projection.
         this method depnds on having ogrinfo available on the system PATH.'''
         args = ['ogrinfo', '-ro', self.filePath]
-        out, err = runArgs(args)
+        out, err = runArgs(' '.join(args))
         if len(err) > 0: # if there's an error
             return err # return the error
         else:
-            rlayName, rshpType = out.split('\n')[2].split(' (')
+            rlayName, rshpType = out.split('\n')[2].split(' (') # read ogrinfo results
             self.defaultName = rlayName.split()[1]
             self.destLayer = self.defaultName
             self.shpType = rshpType.split(')')[0]

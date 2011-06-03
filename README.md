@@ -61,7 +61,9 @@ examples of how to edit this file.
 'xls_config_GIS_data.xls' # the name of the resulting file.
 ```
 
-Once you have edited the 'xls_config_GIS_data.xls' file, you can use it to load
+You can edit the .xls configuration file with Excel or Google Docs.
+You can edit this file and, if you like, save it under a different name (be
+sure that you save it as .xls) you can use it to load
 everything into the database ...
 
 ```python
