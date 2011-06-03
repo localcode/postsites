@@ -418,9 +418,9 @@ class DataSource(object):
 
 def makeXlsConfigurationFile( folder, filePath=None ):
 
-    ds = loader.DataSource( folder ) # this should make a DatSource object and
+    dd = loader.DataDirectory( folder ) # this should make a DatSource object and
     #read everything.
-    return ds.makeXlsConfig( filePath )
+    return dd.makeXlsConfig( filePath )
 
 def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
                                   verbose=False):
