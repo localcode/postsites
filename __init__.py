@@ -134,6 +134,8 @@ def makeTerrainJSON(layer, terrainData):
         pointAttributes.append(columnData)
     # now triangulate the points2d
     tris = triangulate(points2d)
+    print tris[:20]
+    print points[:20]
     geomJSON = {'type': 'Mesh'} # a new geoJSON type!
     geomJSON['coordinates'] = points
     geomJSON['faces'] = tris
@@ -413,6 +415,12 @@ class DataSource(object):
             return_vals.append( self.loadDataFile( df, verbose ))
         return return_vals
 
+
+def makeXlsConfigurationFile( folder, filePath=None ):
+
+    ds = loader.DataSource( folder ) # this should make a DatSource object and
+    #read everything.
+    return ds.makeXlsConfig( filePath )
 
 def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
                                   verbose=False):
