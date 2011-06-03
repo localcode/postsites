@@ -32,7 +32,7 @@ def run():
     elif command == 'loadxls':
         print 'Please enter the name of the xls file you would like to load,'
         print 'or the name of the folder where it is located.'
-        result = raw_input("or press 'Enter' if it is in this folder:\n%s" % os.getcwd())
+        result = raw_input("or press 'Enter' if it is in this folder:\n%s\n\n" % os.getcwd())
         if result == '': # they said it is in the current directory
             files = getXlsFiles(os.getcwd())
         else:
@@ -76,6 +76,6 @@ def run():
         print
         print "Here's you database connection info:\n%s" % dbinfo
 
-        return loadFromXlsConfigurationFile( xls, dbinfo )
+        return loadFromXlsConfigurationFile( xls, dbinfo, verbose=True )
 
 run()
