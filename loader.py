@@ -248,7 +248,7 @@ class DataDirectory(object):
         self.unprojectedFiles = []
         # set fileList
         for fp in shpFiles:
-            df = DataFile(self, fp) # This line needs ogrinfo to be in the PATH
+            df = DataFile( fp) # This line needs ogrinfo to be in the PATH
             self.files.append( df ) # add the datafile object
             if df.hasProj: # this file has a proj file
                 if df.baseWkt not in self._wkts(): # new proj
