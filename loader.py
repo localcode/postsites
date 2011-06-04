@@ -52,6 +52,7 @@ shpTypeDict = {
         "Polygon":'MULTIPOLYGON',
         "Point":'POINT',
         "Line String":'MULTILINESTRING',
+        "3D Point":'POINT25D',
         "3D Multi Point":'MULTIPOINT25D',
         "3D Polygon":'MULTIPOLYGON25D',
         "3D Line String":'MULTILINESTRING25D'
@@ -76,7 +77,8 @@ xlsInfo = {'proj_cols':[
 
 def runArgs(args):
     '''run cmd, return (stdout, stderr).'''
-    p = Popen(args, stdout=PIPE, stderr=PIPE)
+    print args
+    p = Popen(args, stdout=PIPE, stderr=PIPE, shell=True)
     return p.communicate() # returns (stdout, stderr)
 
 def getShpFiles(folder):
@@ -131,6 +133,7 @@ class DataFile(object):
     and can be used to configure the way that the file should be loaded into
     the database.'''
     def __init__(self, filePath): # must be tied to a real file
+        print 'hello from __init__'
         self.fp = os.path.abspath(filePath) # make sure the path is a good one
         self.filePath = self.fp # shortcut !
         # ._readInfo fails silently, needs error raising.
@@ -164,8 +167,11 @@ class DataFile(object):
         this method depnds on having ogrinfo available on the system PATH. This
         needs lots of error catching because it depends on good input and
         having lots of tools available.'''
-        args = ' '.join(['ogrinfo', '-ro', self.filePath])
-        out, err = runArgs( args )
+        print 'hello from _readInfo()'
+        args = ['ogrinfo', '-ro', ('"%s"' % self.filePath)]
+        out, err = runArgs( ' '.join(args) )
+        print 'out: %s' % out
+        print 'err: %s' % err
         if len(err) > 0: # if there's an error
             return err # return the error
         else:
@@ -199,6 +205,9 @@ class DataFile(object):
         return args
 
     def _load(self, dataSource):
+        print self
+        print self.destLayer
+        print self.shpType
         # depends on subprocess module
         args = self._getLoadArgs( dataSource ) # this needs to be a list, not a string
         # use subprocess to run cmd
@@ -415,6 +424,7 @@ def parseXlsFile(xls_file):
     files = []
     for row in frows:
         f = DataFile(row[fcindex['file path']]) # this will cause it to read the file
+        print f.shpType
         f.destLayer = row[fcindex['layer name']]
         f.isTerrainLayer = bool(row[fcindex['is terrain']])
         f.isSiteLayer = bool(row[fcindex['is site layer']])
