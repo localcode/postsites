@@ -72,6 +72,7 @@ except:
 # local package imports
 import loader
 import sqls
+from json_utils import handler # necessary for handling datetimes
 
 SQL_ROOT = os.path.join(os.path.abspath(__file__), 'sqls')
 PLPYTHON_ROOT  = os.path.join(os.path.abspath(__file__), 'plpython')
@@ -171,19 +172,22 @@ class ConfigurationInfo(object):
 
     def setSiteLayer(self, name):
         self.siteLayer = self.layerByName(name)
+        return self
 
     def setTerrainLayer(self, name):
         self.terrainLayer = self.layerByName(name)
+        return self
 
     def setBuildingLayer(self, name):
         self.buildingLayer = self.layerByName(name)
+        return self
 
 class Layer(object):
     """Used to hold information about individual layers."""
 
     def __init__(self, name):
         self.name = name
-        self.name_in_db = None
+        self.name_in_db = name
         self.cols = None
         self.features = None
         self.color = None
@@ -306,27 +310,33 @@ class DataSource(object):
         """
         outList = []
         if self.config and self.config.layers:
-            outList = self.config.layers
+            outList = self.config.layers # this assumes the layers have been setup
         else:
-            self._connect()
+            self._connect() # but if they haven't been setup, then go get them
             regexMask = '^pg_|^sql_|spatial_ref_sys|geometry_columns'
             s = "SELECT tablename FROM pg_tables WHERE tablename !~'%s';" % regexMask
             data = self._run(s)# return a list of the tables in the db
+            c = "SELECT column_name FROM information_schema.columns WHERE table_name = '%s' AND column_name !~'wkb_geometry';"
             for row in data: # data is a list of tuples
-                outList.append(row[0]) #only one item in each tuple
+                layer = Layer(row[0])
+                # now get the column names
+                coldata = self._run(c % layer.name)
+                layer.cols = [col[0] for col in coldata]
+                outList.append(layer) #only one item in each tuple
             self._close()
+        dictTemplate = "'%s':{ 'name': '%s', 'cols':[%s]}"
+        formattedLayerDicts = [( dictTemplate % (layer.name_in_db, layer.name,
+            ', '.join([("'%s'" % r) for r in layer.cols]))) for layer in outList]
+        prefix = 'all_database_layers = {\n'
+        suffix = '\n}'
+        formatted = prefix + ',\n'.join(formattedLayerDicts) + suffix
         if filePath != None:
             f = open(filePath, 'w')
-            f.write('\n'.join(outList))
+            f.write(formatted)
             f.close()
             return outList
         else:
-            # this could be edited to actually get the column names from the db as well
-            formattedLayerDicts = [("'%s':{ 'name': '', 'cols':[ , ]}" % layer) for layer in outList]
-            prefix = 'all_database_layers = {\n'
-            suffix = '\n}'
-            print prefix + ',\n'.join(formattedLayerDicts) + suffix
-            return outList
+            return formatted
 
     def loadLayerDict(self, fileOrDict):
         if type(fileOrDict) != dict: #its a file name
@@ -339,7 +349,7 @@ class DataSource(object):
         self.config.layerDict = layDict
         return self.config #return the ConfigurationInfo object
 
-    def getSiteJSON(self, id=None):
+    def getSiteJson(self, id=None):
         # connect to the database
         self._connect()
         siteDict = {}
@@ -387,10 +397,12 @@ class DataSource(object):
                     siteDict["layers"].append(makeLayerJSON(layer, layerData))
         # close connection
         self._close()
-        return json.dumps(siteDict)
+        return json.dumps(siteDict, default=handler)
 
     def loadDataFile(self, dataFile, verbose=False):
         '''for loading one DataFile object'''
+        if 'PGCLIENTENCODING' not in os.environ:
+            os.environ['PGCLIENTENCODING'] = 'LATIN1'
         # make sure some layers exist
         if not self.config.layers:
             self.config.layers = []
@@ -423,6 +435,8 @@ class DataSource(object):
 
     def loadDataFiles(self, dataFiles, verbose=False):
         '''for loading multiple DataFile objects.'''
+        if 'PGCLIENTENCODING' not in os.environ:
+            os.environ['PGCLIENTENCODING'] = 'LATIN1'
         loadedLayers = []
         return_vals = []
         for df in dataFiles:
@@ -449,4 +463,3 @@ def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
     ds.epsg = destinationEPSG
     results = ds.loadDataFiles( files, verbose )
     return ds, results
-
