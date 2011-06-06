@@ -169,6 +169,15 @@ class ConfigurationInfo(object):
     def layerByName(self, name):
         return [n for n in self.layers if n.name == name][0]
 
+    def setSiteLayer(self, name):
+        self.siteLayer = self.layerByName(name)
+
+    def setTerrainLayer(self, name):
+        self.terrainLayer = self.layerByName(name)
+
+    def setBuildingLayer(self, name):
+        self.buildingLayer = self.layerByName(name)
+
 class Layer(object):
     """Used to hold information about individual layers."""
 
@@ -319,6 +328,17 @@ class DataSource(object):
             print prefix + ',\n'.join(formattedLayerDicts) + suffix
             return outList
 
+    def loadLayerDict(self, fileOrDict):
+        if type(fileOrDict) != dict: #its a file name
+            raw = open(fileOrDict, 'r').read()
+            layDict = eval(raw)
+        else: # its a dictionary
+            layDict = fileOrDict
+        layers = dictToLayers(layDict)
+        self.config.layers = layers
+        self.config.layerDict = layDict
+        return self.config #return the ConfigurationInfo object
+
     def getSiteJSON(self, id=None):
         # connect to the database
         self._connect()
@@ -429,49 +449,4 @@ def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
     ds.epsg = destinationEPSG
     results = ds.loadDataFiles( files, verbose )
     return ds, results
-
-def clean(rawInput):
-    out = rawInput.strip()
-    return out
-
-def getXlsFiles(folder):
-    a = [os.path.split(m)[1] for m in os.path.listdir(folder) if os.path.splitext(m)[1] == '.xls']
-    if len(a) > 0:
-        return a
-    else:
-        f = 'There are no xls files in this folder'
-        m = 'Please enter a different folder'
-        return (f + m)
-
-def test(cmd, ):
-
-    import sys
-
-    command, folder = sys.argv[1], sys.argv[2]
-
-    folder = os.path.abspath(folder)
-
-    if command == 'makexls':
-        return makeXlsConfigurationFile( folder )
-
-    elif command == 'loadxls':
-        print 'Please enter the name of the xls file you would like to load,'
-        print 'or the name of the folder where it is located.'
-        result = raw_input("or press 'Enter' if it is in this folder:\n%s" % os.getcwd())
-        if result == '': # they said it is in the current directory
-            print getXlsFiles(os.getcwd())
-
-
-        print 'Be sure that you have created a spatial database in PostgreSQL'
-        dbuser = raw_input('Please enter the database user name:\n')
-        dbname = raw_input('Please enter the name of the spatial database:\n')
-        dbpassword = raw_input('Please enter the password for the database:\n')
-        user, db, pw = [clean(i) for i in [dbuser, dbname, dbpassword]]
-
-
-
-        print 'Thanks!'
-        dbinfo = {'user':user, 'dbname':db, 'password':pw}
-
-        return
 
