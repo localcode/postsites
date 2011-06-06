@@ -121,22 +121,29 @@ def makeTerrainJSON(layer, terrainData):
     layerDict = {'type': 'Layer', 'name':layer.name}
     geoJSONDict = {'type': 'FeatureCollection', 'features':[]}
     points2d = []
-    pointZs = []
+    points = []
     pointAttributes = [] # a list of attribute values for each point
     for row in terrainData: # each row will contain a point
         rawJSON, columnData = row[0], row[1:]
         geomJSON = json.loads(rawJSON)
         # here is where I should triangulate it.
         point = geomJSON['coordinates']
-        point2d, pointZ = [point[0], point[1]], point[2]
-        points2d.append(point2d)
-        pointZs.append(pointZ)
+        if len(point) == 3:
+            pointZ = point[2]
+        elif layer.zColumn:
+            pointZ = columnData[layer.cols.index(layer.zColumn)]
+        else:
+            pointZ = 0.0
+        pointX, pointY = point[0], point[1]
+        points2d.append((pointX, pointY))
+        points.append((pointX, pointY, pointZ))
         # this creates one list for each point
         pointAttributes.append(columnData)
     # now triangulate the points2d
-    tris = triangulate(points2d)
-    print tris[:20]
-    print points[:20]
+    tris = []
+    for array in triangulate(points2d):
+        face = [int(n) for n in array]
+        tris.append(face)
     geomJSON = {'type': 'Mesh'} # a new geoJSON type!
     geomJSON['coordinates'] = points
     geomJSON['faces'] = tris
@@ -384,10 +391,11 @@ class DataSource(object):
                 layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
                         layer.cols, id, self.config.siteRadius)
                 terrainData = self._run(layerSQL)
-                if len(terrainData > 0):
+                if len(terrainData) > 0:
                     # this should create a different json type. How about
                     # 'MESH'?
-                    terrainJson = makeTerrainJson(layer, terrainData)
+                    terrainJson = makeTerrainJSON(layer, terrainData)
+                    siteDict["layers"].append(terrainJson)
 
             else: # this is some other layer
                 layerSQL = sqls.getLayer(site_layer.name_in_db, layer.name_in_db,
