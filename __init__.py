@@ -250,6 +250,7 @@ class DataSource(object):
         self.config = ConfigurationInfo()
         self.connection = None
         self.writeMode = 'overwrite' #'overwrite' or 'append' are only options
+        self.skipfailures = False
         self.epsg = 3785 # default epsg, look it up
 
     def __unicode__(self):
@@ -264,6 +265,14 @@ class DataSource(object):
         records = cur.fetchall()
         cur.close()
         return records
+
+    def _runMultiple(self, sqls):
+        datas = []
+        self._connect()
+        for sql in sqls:
+            datas.append(self._run(sql))
+        self._close()
+        return datas
 
     def _connectAndRun(self, sql):
         self._connect()
@@ -407,7 +416,7 @@ class DataSource(object):
         self._close()
         return json.dumps(siteDict, default=handler)
 
-    def loadDataFile(self, dataFile, verbose=False):
+    def loadDataFile(self, dataFile, verbose=False, skipfailures=False):
         '''for loading one DataFile object'''
         if 'PGCLIENTENCODING' not in os.environ:
             os.environ['PGCLIENTENCODING'] = 'LATIN1'
@@ -434,6 +443,9 @@ class DataSource(object):
             layer.zColumn = dataFile.zField
         # put it in the configuration layer list
         self.config.layers.append(layer)
+        # set skipfailures
+        if skipfailures:
+            self.skipfailures = True
         # now load it
         result = dataFile._load(self)
         # this part should better report progress and stuff
@@ -441,7 +453,7 @@ class DataSource(object):
             print result
         return result
 
-    def loadDataFiles(self, dataFiles, verbose=False):
+    def loadDataFiles(self, dataFiles, verbose=False, skipfailures=False):
         '''for loading multiple DataFile objects.'''
         if 'PGCLIENTENCODING' not in os.environ:
             os.environ['PGCLIENTENCODING'] = 'LATIN1'
@@ -454,7 +466,7 @@ class DataSource(object):
                 self.writeMode = 'overwrite'
                 loadedLayers.append(df.destLayer)
             # load the file, what is returned?
-            return_vals.append( self.loadDataFile( df, verbose ))
+            return_vals.append( self.loadDataFile( df, verbose, skipfailures ))
         return return_vals
 
 
@@ -465,9 +477,9 @@ def makeXlsConfigurationFile( folder, filePath=None ):
     return dd.makeXlsConfig( filePath )
 
 def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
-                                  verbose=False):
+                                  verbose=False, skipfailures=False):
     projections, files = loader.parseXlsFile( xlsFile )
     ds = DataSource( dbinfo )
     ds.epsg = destinationEPSG
-    results = ds.loadDataFiles( files, verbose )
+    results = ds.loadDataFiles( files, verbose, skipfailures )
     return ds, results

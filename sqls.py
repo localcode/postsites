@@ -1,6 +1,10 @@
 
-def colFormat(lay, columnList):
-    return ''.join([', ' + lay + '.' + col for col in columnList])
+def colFormat(lay, columnList, leadingComma=True):
+    if leadingComma:
+        pre = ', '
+    else:
+        pre = ' '
+    return pre + ', '.join(['%s.%s' % (lay, col) for col in columnList])
 
 # Creates a new layer in a PostGIS database
 # with an ogc_fid attribute
@@ -30,6 +34,17 @@ def dumpPoints(fromLayer, toLayer):
             %(from_layer)s
         ) AS g;
 """ % {'from_layer':fromLayer, 'point_layer':toLayer}
+
+# gets data from any columns in a list based on fid
+def getInfo(layer, cols, sid):
+    return """SELECT
+    %(columns)s
+    FROM
+        %(layer)s
+    WHERE
+        %(layer)s.ogc_fid = %(sid)s
+    ;
+""" % {'layer':layer, 'columns':colFormat(layer, cols, False), 'sid':sid}
 
 
 # Gets all the other objects from a layer
@@ -121,6 +136,15 @@ ORDER BY ST_Distance(t.wkb_geometry, (ST_Centroid(f.wkb_geometry)))
 LIMIT 1;
 """ % {'from_layer':forLayer, 'terrain_layer':terrainLayer, 'max_distance':searchDistance, 'id':id}
 
+def nearest(layerToSearchFrom, layerToSearchWithin, searchDistance, sid, cols):
+    return """SELECT %(columns)s
+FROM %(layerToSearchFrom)s , %(layerToSearchWithin)s
+WHERE ST_DWithin(%(layerToSearchWithin)s.wkb_geometry, (ST_Centroid(%(layerToSearchFrom)s.wkb_geometry)) , %(max_distance)s)
+AND %(layerToSearchFrom)s.ogc_fid = %(id)s
+ORDER BY ST_Distance(%(layerToSearchWithin)s.wkb_geometry, (ST_Centroid(%(layerToSearchFrom)s.wkb_geometry)))
+LIMIT 1;
+""" % { 'layerToSearchFrom':layerToSearchFrom, 'layerToSearchWithin':layerToSearchWithin,
+        'id':sid, 'columns':colFormat(layerToSearchWithin, cols, False), 'max_distance':searchDistance }
 
 # Gets all the other objects from the site layer
 # that are within the site_radius distance from
