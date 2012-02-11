@@ -58,7 +58,15 @@ Next, we can start getting JSON data for a site like this:
 import os
 
 # Third party imports
-import psycopg2 as pg
+try: # get psycopg for laoding things into postgres
+    import psycopg2 as pg
+except:
+    print 'the psycopg2 module was not found.'
+    print 'please make sure it is installed and available'
+    print 'through sys.path in order to load data into a '
+    print 'PostGIS database.'
+    print 'You can still use this module for finding shapefiles.'
+
 try: #try to import json
     import json #json is in python 2.6 and later standard libraries
 except: #if json doesn't work, try simplejson
