@@ -212,6 +212,33 @@ class DataFile(object):
         else:
             return True, out
 
+    def _getProjArgs(self, to_epsg, destFilePath, ogrDataFormat):
+        args = ['ogr2ogr',
+                '-t_srs "EPSG:%s"' % to_epsg,
+                '-s_srs "EPSG:%s"' % self.proj.epsg,
+                '-f "%s"' % ogrDataFormat,
+                '"%s"' % destFilePath,
+                '"%s"' % self.filePath,
+                ]
+        return args
+
+    def project(self, to_epsg, destFilePath=None, ogrDataFormat='ESRI Shapefile'):
+        '''Projects the DataFile to a new coordinate system, using an EPSG
+            code. Destination file path and format are optional.
+
+            This method does not depend on PostgreSQL or the psycopg2 module.
+        '''
+        if not destFilePath:
+            path, ext = os.path.splitext(self.fp)
+            destFilePath = ''.join([path, '_%s' % to_epsg, ext])
+        args = self._getProjArgs(to_epsg, destFilePath, ogrDataFormat):
+        # use subprocess to run cmd
+        out, err = runArgs(' '.join(args)) # I thought Popen could join these better, but it doesn't :(
+        if len(err) > 0: # if there's an error
+            return False, err # return the error
+        else:
+            return True, out
+
 
 class DataDirectory(object):
     '''A DataDirectory object contains information about a folder
@@ -295,13 +322,13 @@ class DataDirectory(object):
         fileRows = []
         for f in self.files:
             row = []
-            row.append(f.defaultName)
-            row.append(f.defaultName) # use the default name as the layer name
+            row.append(f.defaultName.decode('utf-8'))
+            row.append(f.defaultName.decode('utf-8')) # use the default name as the layer name
             if f.proj in self.uniqueProjections:
                 row.append(self.uniqueProjections.index(f.proj)+1)
             else:
                 row.append('Unknown Projection')
-            row.append(f.filePath)
+            row.append(f.filePath.decode('utf-8'))
             row.append(f.shpType)
             row.append(f.isSiteLayer)
             row.append(f.isTerrainLayer)
