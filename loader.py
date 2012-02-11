@@ -231,7 +231,7 @@ class DataFile(object):
         if not destFilePath:
             path, ext = os.path.splitext(self.fp)
             destFilePath = ''.join([path, '_%s' % to_epsg, ext])
-        args = self._getProjArgs(to_epsg, destFilePath, ogrDataFormat):
+        args = self._getProjArgs(to_epsg, destFilePath, ogrDataFormat)
         # use subprocess to run cmd
         out, err = runArgs(' '.join(args)) # I thought Popen could join these better, but it doesn't :(
         if len(err) > 0: # if there's an error
