@@ -27,6 +27,7 @@ Planned Use:
 import os
 import sys
 from subprocess import Popen, PIPE
+from pprint import pprint, pformat
 
 # Third Party Imports
 try:
@@ -74,6 +75,13 @@ xlsInfo = {'proj_cols':[
                 "z field",]
         }
 
+def cvars(obj):
+    v = vars(obj)
+    d = {}
+    for k in v:
+        if k[0] != '_':
+            d[k] = v[k]
+    return d
 
 def runArgs(args):
     '''run cmd, return (stdout, stderr).'''
@@ -212,26 +220,32 @@ class DataFile(object):
         else:
             return True, out
 
-    def _getProjArgs(self, to_epsg, destFilePath, ogrDataFormat):
+    def _getProjArgs(self, to_epsg, from_epsg, destFilePath, ogrDataFormat):
         args = ['ogr2ogr',
                 '-t_srs "EPSG:%s"' % to_epsg,
-                '-s_srs "EPSG:%s"' % self.proj.epsg,
+                '-s_srs "EPSG:%s"' % from_epsg,
                 '-f "%s"' % ogrDataFormat,
                 '"%s"' % destFilePath,
                 '"%s"' % self.filePath,
                 ]
         return args
 
-    def project(self, to_epsg, destFilePath=None, ogrDataFormat='ESRI Shapefile'):
+    def project(self, to_epsg, from_epsg=None, destFilePath=None, ogrDataFormat='ESRI Shapefile'):
         '''Projects the DataFile to a new coordinate system, using an EPSG
             code. Destination file path and format are optional.
 
             This method does not depend on PostgreSQL or the psycopg2 module.
         '''
+        if not from_epsg:
+            if self.proj:
+                from_epsg = self.proj.epsg
+            else:
+                print 'undeclared projection for this shapefile!'
+                raise
         if not destFilePath:
             path, ext = os.path.splitext(self.fp)
             destFilePath = ''.join([path, '_%s' % to_epsg, ext])
-        args = self._getProjArgs(to_epsg, destFilePath, ogrDataFormat)
+        args = self._getProjArgs(to_epsg, from_epsg, destFilePath, ogrDataFormat)
         # use subprocess to run cmd
         out, err = runArgs(' '.join(args)) # I thought Popen could join these better, but it doesn't :(
         if len(err) > 0: # if there's an error
@@ -404,6 +418,27 @@ EPSG codes for input can be found using these websites:
             print "It might not be a valid python list object"
             print "It appears to be a %s" % type(proj_list)
             return
+
+    def pprintData(self, file_path=None):
+        things = []
+        folder = 'folder = %s' % self.folder
+        projs = 'unique_projections = %s' % pformat([cvars(p) for p in self.uniqueProjections],
+                indent=4)
+        fs = 'files = %s' % pformat([cvars(f) for f in self.files], indent=4)
+        things.append(folder)
+        things.append(projs)
+        things.append(fs)
+        if self.unprojectedFiles:
+            ufiles = 'unprojected_files = %s' % pformat([cvars(f) for f in self.unprojectedFiles],
+                    indent=4)
+            things.append(ufiles)
+        s = '\n'.join(things)
+        if file_path:
+            fobj = open(file_path, 'w')
+            fobj.write(s)
+            fobj.close()
+        else:
+            print s
 
 def parseXlsFile(xls_file):
     '''Parses an xls file into Projection and DataFile objects.
