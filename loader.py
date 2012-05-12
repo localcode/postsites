@@ -52,6 +52,7 @@ except:
 shpTypeDict = {
         "Polygon":'MULTIPOLYGON',
         "Point":'POINT',
+        "Multi Point":'MULTIPOINT',
         "Line String":'MULTILINESTRING',
         "3D Point":'POINT25D',
         "3D Multi Point":'MULTIPOINT25D',

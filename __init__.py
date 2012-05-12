@@ -487,9 +487,15 @@ def makeXlsConfigurationFile( folder, filePath=None ):
     return dd.makeXlsConfig( filePath )
 
 def loadFromXlsConfigurationFile( xlsFile, dbinfo, destinationEPSG=3785,
-                                  verbose=False, skipfailures=False):
+                                  verbose=False, skipfailures=False,
+                                  write_mode='overwrite'):
     projections, files = loader.parseXlsFile( xlsFile )
     ds = DataSource( dbinfo )
     ds.epsg = destinationEPSG
+    if write_mode in ('overwrite', 'append'):
+        ds.writeMode = write_mode
+    else:
+        print "'overwrite' and 'append' are the only options for 'write_mode'"
+        print "your argument, '%s', will be ignored" % write_mode
     results = ds.loadDataFiles( files, verbose, skipfailures )
     return ds, results
