@@ -5,7 +5,7 @@
 PostSites is a set of python modules for managing PostGIS data sets and retrieving multiple layers of spatial data for a set of sites, represented by the features on a particular layer. It allows one to retrieve multple layers of data based on proximity to a point, and for organizing layers into specific types (such as terrain, parcels, etc.) that can be used for 3d modeling or visualization.
 
 
-PostSites is being developed as part of the [Local Code](http!w!7<Mouse>C!x!7<Mouse>C!y!7<Mouse>C!z!7
+PostSites is being developed as part of the [Local Code](http://vimeo.com/8080630)
 
 ### Dependencies
 
@@ -13,7 +13,7 @@ PostSites needs [`psycopg2`](http://www.initd.org/psycopg/) and [`simplejson`](h
 
 On Windows, in order to install third party modules (such as `psycopg2`, `simplejson`, `xlwt`, and `xlrd`) from command line with a tool like `easy_install` or `pip`, you will need to run the 'cmd' program as Administrator. To do this, simply right click on the 'cmd' program icon and select 'Run As Administrator'
 
-On Windows, to install `pip` (which is a tool that makes it very easy to install pythoon packages.), you should visit [this page](http://www.pip-installer.org/en/latest/installing.html#using-the-installer) and download the `get-pip.py` script. You will need to run the installer as administrator. Once you've done that, you can install all the depndencies using the following commands (While running as administrator) using 'cmd'.
+On Windows, to install `pip` (which is a tool that makes it very easy to install pythoon packages.), you should visit [this page](http://www.pip-installer.org/en/latest/installing.html#using-the-installer) and download the `get-pip.py` script. You will need to run the installer as administrator. Once you've done that, you can install all the dependencies using the following commands (While running as administrator) using 'cmd'.
 
 ```bash
 pip install psycopg2
