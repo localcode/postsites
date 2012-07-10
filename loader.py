@@ -222,7 +222,7 @@ class DataFile(object):
             return True, out
 
     def _getProjArgs(self, to_epsg, from_epsg, destFilePath, ogrDataFormat):
-		"""This function sets up commands for reprojecting shapefiles"""
+		"""This function sets up commands for reprojecting shapefiles, testing github"""
         args = ['ogr2ogr',
                 '-t_srs "EPSG:%s"' % to_epsg,
                 '-s_srs "EPSG:%s"' % from_epsg,
